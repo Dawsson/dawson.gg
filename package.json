@@ -1,0 +1,21 @@
+{
+  "name": "vault-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "deploy": "NODE_ENV=production bun run alchemy.run.ts",
+    "destroy": "DESTROY=true bun run alchemy.run.ts",
+    "ingest": "bun run scripts/ingest.ts"
+  },
+  "dependencies": {
+    "alchemy": "^0.85.1",
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250805.0",
+    "@types/bun": "latest",
+    "typescript": "^5.9.3"
+  }
+}
