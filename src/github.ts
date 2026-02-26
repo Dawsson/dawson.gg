@@ -94,7 +94,10 @@ async function fetchNote(
 
   if (!res.ok) return null;
   const data = (await res.json()) as GitHubContent;
-  const content = atob(data.content);
+  // Decode base64 → binary → UTF-8 (atob alone mangles multibyte chars)
+  const binary = atob(data.content.replace(/\n/g, ""));
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  const content = new TextDecoder().decode(bytes);
   const { frontmatter, body } = parseFrontmatter(content);
 
   return {

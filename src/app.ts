@@ -32,7 +32,7 @@ export function createApp() {
           <input type="text" name="q" placeholder="Search public notes..." />
           <button type="submit">Search</button>
         </form>
-        <ul>${noteList}</ul>
+        <ul class="note-list">${noteList}</ul>
       `,
       ),
     );
@@ -56,7 +56,7 @@ export function createApp() {
       layout(
         note.title,
         `
-        <a href="/">&larr; Back</a>
+        <a href="/" class="back-link">&larr; Back</a>
         <article>
           <h1>${note.title}</h1>
           ${renderMarkdown(note.content)}
@@ -118,7 +118,7 @@ export function createApp() {
       layout(
         `Search: ${q}`,
         `
-        <a href="/">&larr; Back</a>
+        <a href="/" class="back-link">&larr; Back</a>
         <h1>Search: ${q}</h1>
         <form action="/search" method="get" class="search-form">
           <input type="text" name="q" value="${escapeHtml(q)}" placeholder="Search public notes..." />
@@ -249,22 +249,152 @@ function layout(title: string, body: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${title}</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 720px; margin: 0 auto; padding: 2rem 1rem; line-height: 1.6; color: #1a1a1a; }
-    a { color: #0066cc; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    h1 { margin-bottom: 1rem; }
-    h2, h3, h4 { margin-top: 1.5rem; margin-bottom: 0.5rem; }
-    ul { padding-left: 1.5rem; }
+    @import url('https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #fff;
+      --text: #111;
+      --text-secondary: #737373;
+      --text-faint: #a3a3a3;
+      --link: #111;
+      --link-decoration: #a3a3a3;
+      --border: #e5e5e5;
+      --code-bg: #f5f5f5;
+      --inline-code-bg: #f5f5f5;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111;
+        --text: #fafafa;
+        --text-secondary: #a3a3a3;
+        --text-faint: #737373;
+        --link: #fafafa;
+        --link-decoration: #525252;
+        --border: #262626;
+        --code-bg: #1a1a1a;
+        --inline-code-bg: #262626;
+      }
+    }
+
+    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+    body {
+      font-family: 'STIX Two Text', Georgia, 'Times New Roman', serif;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+      line-height: 1.3;
+      color: var(--text);
+      background: var(--bg);
+      font-size: 1rem;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration: underline;
+      text-decoration-color: var(--link-decoration);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 2.5px;
+    }
+    a:hover { text-decoration-color: var(--text); }
+
+    h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.25rem; letter-spacing: -0.02em; }
+    h2 { font-size: 1.25rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+
+    p { margin-bottom: 1.25rem; }
+
+    ul, ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
     li { margin-bottom: 0.5rem; }
-    article { margin-top: 1rem; }
-    article p { margin-bottom: 1rem; }
-    code { background: #f4f4f4; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em; }
-    hr { margin: 2rem 0; border: none; border-top: 1px solid #e0e0e0; }
-    .search-form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
-    .search-form input { flex: 1; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
-    .search-form button { padding: 0.5rem 1rem; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    .snippet { color: #666; font-size: 0.9em; margin-top: 0.25rem; }
+    ol { list-style-type: decimal; }
+    ul { list-style-type: disc; }
+
+    strong { font-weight: 600; }
+
+    code {
+      font-family: 'SF Mono', SFMono-Regular, Menlo, monospace;
+      font-size: 0.85em;
+      background: var(--inline-code-bg);
+      padding: 0.15em 0.35em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin-bottom: 1.25rem;
+      line-height: 1.5;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+      font-size: 0.85rem;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2rem 0;
+    }
+
+    blockquote {
+      border-left: 2px solid var(--border);
+      padding-left: 1rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.25rem;
+    }
+
+    article { margin-top: 0.5rem; }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 2rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .back-link:hover { color: var(--text); }
+
+    .note-list { list-style: none; padding-left: 0; }
+    .note-list li { margin-bottom: 0.75rem; }
+    .note-list a { font-size: 1rem; }
+
+    .search-form {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+    }
+    .search-form input {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    .search-form input::placeholder { color: var(--text-faint); }
+    .search-form button {
+      padding: 0.5rem 1rem;
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+
+    .search-results { list-style: none; padding-left: 0; }
+    .search-results li { margin-bottom: 1.25rem; }
+    .search-results a { font-weight: 600; }
+    .snippet { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem; }
   </style>
 </head>
 <body>${body}</body>
