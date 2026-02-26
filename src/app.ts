@@ -44,18 +44,24 @@ export function createApp() {
     );
   });
 
-  // View a public note
+  // View a note — public notes work without auth, private notes need ?token=
   app.get("/note/*", async (c) => {
     const path = c.req.path.replace("/note/", "");
     const decoded = decodeURIComponent(path);
+    const isPublic = decoded.startsWith("Public/");
 
-    // Only allow Public/ notes via this route
-    if (!decoded.startsWith("Public/")) {
-      return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
+    // Private notes require token
+    if (!isPublic) {
+      const token = c.req.query("token");
+      if (token !== c.env.API_TOKEN) {
+        return c.html(layout("Unauthorized", "<h1>This note requires authentication</h1><p>Append <code>?token=...</code> to the URL.</p>"), 401);
+      }
     }
 
-    const notes = await getPublicNotesWithCache(c.env);
-    const note = notes.find((n) => n.path === decoded);
+    const note = isPublic
+      ? (await getPublicNotesWithCache(c.env)).find((n) => n.path === decoded)
+      : await fetchNoteByPath(c.env, decoded);
+
     if (!note)
       return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
 
