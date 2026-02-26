@@ -143,10 +143,13 @@ export function createApp() {
 
   const api = new Hono<{ Bindings: Bindings }>();
 
-  // Auth middleware — Bearer token
+  // Auth middleware — Bearer token or ?token= query param
   api.use("*", async (c, next) => {
-    const auth = c.req.header("Authorization");
-    if (auth !== `Bearer ${c.env.API_TOKEN}`) {
+    const header = c.req.header("Authorization");
+    const query = c.req.query("token");
+    const valid =
+      header === `Bearer ${c.env.API_TOKEN}` || query === c.env.API_TOKEN;
+    if (!valid) {
       return c.json({ error: "unauthorized" }, 401);
     }
     await next();
