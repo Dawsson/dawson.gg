@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { cache } from "hono/cache";
 import type { Bindings, ShareLink, VaultNote } from "./types.ts";
 import {
   fetchAllNotes,
@@ -14,18 +13,13 @@ export function createApp() {
 
   // ─── Public routes ───
 
-  app.use(
-    "/note/*",
-    cache({ cacheName: "vault-site", cacheControl: "max-age=300" }),
-  );
-
   // Home — list public notes
   app.get("/", async (c) => {
     const notes = await getPublicNotesWithCache(c.env);
     const noteList = notes
       .map(
         (n) =>
-          `<li><a href="/note/${encodeURIComponent(n.path)}">${n.title}</a></li>`,
+          `<li><a href="/p/${encodeURIComponent(n.path)}">${n.title}</a></li>`,
       )
       .join("\n");
 
@@ -44,24 +38,17 @@ export function createApp() {
     );
   });
 
-  // View a note — public notes work without auth, private notes need ?token=
-  app.get("/note/*", async (c) => {
-    const path = c.req.path.replace("/note/", "");
+  // View a public note by path (only Public/ folder)
+  app.get("/p/*", async (c) => {
+    const path = c.req.path.replace("/p/", "");
     const decoded = decodeURIComponent(path);
-    const isPublic = decoded.startsWith("Public/");
 
-    // Private notes require token
-    if (!isPublic) {
-      const token = c.req.query("token");
-      if (token !== c.env.API_TOKEN) {
-        return c.html(layout("Unauthorized", "<h1>This note requires authentication</h1><p>Append <code>?token=...</code> to the URL.</p>"), 401);
-      }
+    if (!decoded.startsWith("Public/")) {
+      return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
     }
 
-    const note = isPublic
-      ? (await getPublicNotesWithCache(c.env)).find((n) => n.path === decoded)
-      : await fetchNoteByPath(c.env, decoded);
-
+    const notes = await getPublicNotesWithCache(c.env);
+    const note = notes.find((n) => n.path === decoded);
     if (!note)
       return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
 
@@ -70,6 +57,34 @@ export function createApp() {
         note.title,
         `
         <a href="/">&larr; Back</a>
+        <article>
+          <h1>${note.title}</h1>
+          ${renderMarkdown(note.content)}
+        </article>
+      `,
+      ),
+    );
+  });
+
+  // View any note by UUID (the UUID is the secret — no other auth needed)
+  app.get("/note/:id", async (c) => {
+    const id = c.req.param("id");
+    const raw = await c.env.CACHE.get(`share:${id}`);
+    if (!raw)
+      return c.html(
+        layout("Not Found", "<h1>This link doesn't exist or has expired</h1>"),
+        404,
+      );
+
+    const share = JSON.parse(raw) as ShareLink;
+    const note = await fetchNoteByPath(c.env, share.path);
+    if (!note)
+      return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
+
+    return c.html(
+      layout(
+        note.title,
+        `
         <article>
           <h1>${note.title}</h1>
           ${renderMarkdown(note.content)}
@@ -92,7 +107,7 @@ export function createApp() {
           .map(
             (r) =>
               `<li>
-                <a href="/note/${encodeURIComponent(r.path)}">${r.title}</a>
+                <a href="/p/${encodeURIComponent(r.path)}">${r.title}</a>
                 <p class="snippet">${r.snippet}</p>
               </li>`,
           )
@@ -110,36 +125,6 @@ export function createApp() {
           <button type="submit">Search</button>
         </form>
         <ul class="search-results">${resultHtml}</ul>
-      `,
-      ),
-    );
-  });
-
-  // ─── Shared links ───
-
-  // View a shared note via secret UUID
-  app.get("/s/:id", async (c) => {
-    const id = c.req.param("id");
-    const raw = await c.env.CACHE.get(`share:${id}`);
-    if (!raw)
-      return c.html(
-        layout("Not Found", "<h1>This link doesn't exist or has expired</h1>"),
-        404,
-      );
-
-    const share = JSON.parse(raw) as ShareLink;
-    const note = await fetchNoteByPath(c.env, share.path);
-    if (!note)
-      return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
-
-    return c.html(
-      layout(
-        note.title,
-        `
-        <article>
-          <h1>${note.title}</h1>
-          ${renderMarkdown(note.content)}
-        </article>
       `,
       ),
     );
@@ -177,22 +162,19 @@ export function createApp() {
     return c.json({ indexed: notes.length });
   });
 
-  // Create a share link for any note
+  // Create a share link for any note → returns /note/<uuid> URL
   api.post("/share", async (c) => {
     const { path } = await c.req.json<{ path: string }>();
     if (!path) return c.json({ error: "path required" }, 400);
 
-    // Verify note exists
     const note = await fetchNoteByPath(c.env, path);
     if (!note) return c.json({ error: "note not found" }, 404);
 
     const id = crypto.randomUUID();
     const share: ShareLink = { id, path, createdAt: new Date().toISOString() };
-
-    // Store forever (no TTL) — can add expiry later if needed
     await c.env.CACHE.put(`share:${id}`, JSON.stringify(share));
 
-    const url = new URL(`/s/${id}`, c.req.url);
+    const url = new URL(`/note/${id}`, c.req.url);
     return c.json({ id, url: url.toString(), path });
   });
 
