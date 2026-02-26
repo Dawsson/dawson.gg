@@ -53,16 +53,7 @@ export function createApp() {
       return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
 
     return c.html(
-      layout(
-        note.title,
-        `
-        <a href="/" class="back-link">&larr; Back</a>
-        <article>
-          <h1>${note.title}</h1>
-          ${renderMarkdown(note.content)}
-        </article>
-      `,
-      ),
+      noteLayout(note),
     );
   });
 
@@ -81,17 +72,7 @@ export function createApp() {
     if (!note)
       return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
 
-    return c.html(
-      layout(
-        note.title,
-        `
-        <article>
-          <h1>${note.title}</h1>
-          ${renderMarkdown(note.content)}
-        </article>
-      `,
-      ),
-    );
+    return c.html(noteLayout(note));
   });
 
   // Public search (only searches public notes)
@@ -239,6 +220,24 @@ function escapeHtml(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function noteLayout(note: VaultNote): string {
+  const body = stripLeadingH1(note.content);
+  return layout(
+    note.title,
+    `
+    <nav><a href="/" class="back-link">&larr; Back</a></nav>
+    <article>
+      <h1>${note.title}</h1>
+      ${renderMarkdown(body)}
+    </article>
+    `,
+  );
+}
+
+function stripLeadingH1(md: string): string {
+  return md.replace(/^# .+\n*/m, "");
 }
 
 function layout(title: string, body: string): string {
