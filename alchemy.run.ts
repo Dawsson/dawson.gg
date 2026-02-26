@@ -19,6 +19,7 @@ const site = await Worker("vault-site", {
     AI: ai,
     CACHE: cache,
     GITHUB_TOKEN: secret(process.env.GITHUB_TOKEN),
+    API_TOKEN: secret(process.env.API_TOKEN),
     GITHUB_REPO: "Dawsson/vault",
     NODE_ENV: process.env.NODE_ENV ?? "development",
   },

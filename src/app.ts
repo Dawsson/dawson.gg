@@ -1,22 +1,27 @@
 import { Hono } from "hono";
 import { cache } from "hono/cache";
-import type { Bindings, VaultNote } from "./types.ts";
-import { fetchPublicNotes } from "./github.ts";
+import type { Bindings, ShareLink, VaultNote } from "./types.ts";
+import {
+  fetchAllNotes,
+  fetchNoteByPath,
+  fetchPublicNotes,
+} from "./github.ts";
 import { buildIndex, searchNotes } from "./search.ts";
 import { renderMarkdown } from "./render.ts";
 
 export function createApp() {
   const app = new Hono<{ Bindings: Bindings }>();
 
-  // Cache public pages for 5 min
+  // ─── Public routes ───
+
   app.use(
     "/note/*",
     cache({ cacheName: "vault-site", cacheControl: "max-age=300" }),
   );
 
-  // Home — list all public notes
+  // Home — list public notes
   app.get("/", async (c) => {
-    const notes = await getNotesWithCache(c.env);
+    const notes = await getPublicNotesWithCache(c.env);
     const noteList = notes
       .map(
         (n) =>
@@ -30,7 +35,7 @@ export function createApp() {
         `
         <h1>Vault</h1>
         <form action="/search" method="get" class="search-form">
-          <input type="text" name="q" placeholder="Search notes..." />
+          <input type="text" name="q" placeholder="Search public notes..." />
           <button type="submit">Search</button>
         </form>
         <ul>${noteList}</ul>
@@ -39,14 +44,20 @@ export function createApp() {
     );
   });
 
-  // View a note
+  // View a public note
   app.get("/note/*", async (c) => {
     const path = c.req.path.replace("/note/", "");
     const decoded = decodeURIComponent(path);
-    const notes = await getNotesWithCache(c.env);
-    const note = notes.find((n) => n.path === decoded);
 
-    if (!note) return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
+    // Only allow Public/ notes via this route
+    if (!decoded.startsWith("Public/")) {
+      return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
+    }
+
+    const notes = await getPublicNotesWithCache(c.env);
+    const note = notes.find((n) => n.path === decoded);
+    if (!note)
+      return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
 
     return c.html(
       layout(
@@ -62,12 +73,14 @@ export function createApp() {
     );
   });
 
-  // Search
+  // Public search (only searches public notes)
   app.get("/search", async (c) => {
     const q = c.req.query("q") ?? "";
     if (!q.trim()) return c.redirect("/");
 
-    const results = await searchNotes(c.env, q);
+    const results = (await searchNotes(c.env, q)).filter((r) =>
+      r.path.startsWith("Public/"),
+    );
     const resultHtml = results.length
       ? results
           .map(
@@ -75,7 +88,6 @@ export function createApp() {
               `<li>
                 <a href="/note/${encodeURIComponent(r.path)}">${r.title}</a>
                 <p class="snippet">${r.snippet}</p>
-                <span class="score">${(r.score * 100).toFixed(1)}%</span>
               </li>`,
           )
           .join("\n")
@@ -88,7 +100,7 @@ export function createApp() {
         <a href="/">&larr; Back</a>
         <h1>Search: ${q}</h1>
         <form action="/search" method="get" class="search-form">
-          <input type="text" name="q" value="${q}" placeholder="Search notes..." />
+          <input type="text" name="q" value="${escapeHtml(q)}" placeholder="Search public notes..." />
           <button type="submit">Search</button>
         </form>
         <ul class="search-results">${resultHtml}</ul>
@@ -97,33 +109,145 @@ export function createApp() {
     );
   });
 
-  // API: trigger re-index
-  app.post("/api/reindex", async (c) => {
-    const notes = await fetchPublicNotes(c.env);
+  // ─── Shared links ───
+
+  // View a shared note via secret UUID
+  app.get("/s/:id", async (c) => {
+    const id = c.req.param("id");
+    const raw = await c.env.CACHE.get(`share:${id}`);
+    if (!raw)
+      return c.html(
+        layout("Not Found", "<h1>This link doesn't exist or has expired</h1>"),
+        404,
+      );
+
+    const share = JSON.parse(raw) as ShareLink;
+    const note = await fetchNoteByPath(c.env, share.path);
+    if (!note)
+      return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
+
+    return c.html(
+      layout(
+        note.title,
+        `
+        <article>
+          <h1>${note.title}</h1>
+          ${renderMarkdown(note.content)}
+        </article>
+      `,
+      ),
+    );
+  });
+
+  // ─── Authenticated API (agents + you) ───
+
+  const api = new Hono<{ Bindings: Bindings }>();
+
+  // Auth middleware — Bearer token
+  api.use("*", async (c, next) => {
+    const auth = c.req.header("Authorization");
+    if (auth !== `Bearer ${c.env.API_TOKEN}`) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
+    await next();
+  });
+
+  // Search all vault content (private + public)
+  api.get("/search", async (c) => {
+    const q = c.req.query("q") ?? "";
+    const limit = parseInt(c.req.query("limit") ?? "10");
+    if (!q.trim()) return c.json({ results: [] });
+    const results = await searchNotes(c.env, q, limit);
+    return c.json({ results });
+  });
+
+  // Re-index all vault content
+  api.post("/reindex", async (c) => {
+    const notes = await fetchAllNotes(c.env);
     await buildIndex(c.env, notes);
     return c.json({ indexed: notes.length });
   });
 
-  // API: search (JSON)
-  app.get("/api/search", async (c) => {
-    const q = c.req.query("q") ?? "";
-    if (!q.trim()) return c.json({ results: [] });
-    const results = await searchNotes(c.env, q);
-    return c.json({ results });
+  // Create a share link for any note
+  api.post("/share", async (c) => {
+    const { path } = await c.req.json<{ path: string }>();
+    if (!path) return c.json({ error: "path required" }, 400);
+
+    // Verify note exists
+    const note = await fetchNoteByPath(c.env, path);
+    if (!note) return c.json({ error: "note not found" }, 404);
+
+    const id = crypto.randomUUID();
+    const share: ShareLink = { id, path, createdAt: new Date().toISOString() };
+
+    // Store forever (no TTL) — can add expiry later if needed
+    await c.env.CACHE.put(`share:${id}`, JSON.stringify(share));
+
+    const url = new URL(`/s/${id}`, c.req.url);
+    return c.json({ id, url: url.toString(), path });
   });
+
+  // List all share links
+  api.get("/shares", async (c) => {
+    const list = await c.env.CACHE.list({ prefix: "share:" });
+    const shares: ShareLink[] = [];
+    for (const key of list.keys) {
+      const raw = await c.env.CACHE.get(key.name);
+      if (raw) shares.push(JSON.parse(raw) as ShareLink);
+    }
+    return c.json({ shares });
+  });
+
+  // Delete a share link
+  api.delete("/share/:id", async (c) => {
+    const id = c.req.param("id");
+    await c.env.CACHE.delete(`share:${id}`);
+    return c.json({ deleted: id });
+  });
+
+  // Get a specific note (raw content)
+  api.get("/note", async (c) => {
+    const path = c.req.query("path") ?? "";
+    if (!path) return c.json({ error: "path required" }, 400);
+    const note = await fetchNoteByPath(c.env, path);
+    if (!note) return c.json({ error: "not found" }, 404);
+    return c.json(note);
+  });
+
+  // List all notes in the vault
+  api.get("/notes", async (c) => {
+    const notes = await fetchAllNotes(c.env);
+    return c.json({
+      notes: notes.map((n) => ({
+        path: n.path,
+        title: n.title,
+        frontmatter: n.frontmatter,
+      })),
+    });
+  });
+
+  app.route("/api", api);
 
   return app;
 }
 
-async function getNotesWithCache(env: Bindings): Promise<VaultNote[]> {
-  const cached = await env.CACHE.get("vault:notes");
+async function getPublicNotesWithCache(env: Bindings): Promise<VaultNote[]> {
+  const cached = await env.CACHE.get("vault:public-notes");
   if (cached) return JSON.parse(cached) as VaultNote[];
 
   const notes = await fetchPublicNotes(env);
-  await env.CACHE.put("vault:notes", JSON.stringify(notes), {
+  await env.CACHE.put("vault:public-notes", JSON.stringify(notes), {
     expirationTtl: 300,
   });
   return notes;
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function layout(title: string, body: string): string {
@@ -150,7 +274,6 @@ function layout(title: string, body: string): string {
     .search-form input { flex: 1; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
     .search-form button { padding: 0.5rem 1rem; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
     .snippet { color: #666; font-size: 0.9em; margin-top: 0.25rem; }
-    .score { color: #999; font-size: 0.8em; }
   </style>
 </head>
 <body>${body}</body>

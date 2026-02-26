@@ -11,18 +11,52 @@ interface GitHubContent {
   encoding: string;
 }
 
+/** Fetch only notes in Public/ */
 export async function fetchPublicNotes(env: Bindings): Promise<VaultNote[]> {
+  return fetchNotesByPrefix(env, "Public/");
+}
+
+/** Fetch ALL markdown notes in the vault */
+export async function fetchAllNotes(env: Bindings): Promise<VaultNote[]> {
   const tree = await fetchTree(env);
-  const publicFiles = tree.filter(
-    (item) => item.path.startsWith("Public/") && item.path.endsWith(".md"),
+  const mdFiles = tree.filter(
+    (item) =>
+      item.path.endsWith(".md") &&
+      !item.path.startsWith("Templates/") &&
+      !item.path.startsWith("Archive/") &&
+      item.path !== "CLAUDE.md",
   );
 
   const notes: VaultNote[] = [];
-  for (const file of publicFiles) {
+  for (const file of mdFiles) {
     const note = await fetchNote(env, file.path);
     if (note) notes.push(note);
   }
+  return notes;
+}
 
+/** Fetch a single note by path */
+export async function fetchNoteByPath(
+  env: Bindings,
+  path: string,
+): Promise<VaultNote | null> {
+  return fetchNote(env, path);
+}
+
+async function fetchNotesByPrefix(
+  env: Bindings,
+  prefix: string,
+): Promise<VaultNote[]> {
+  const tree = await fetchTree(env);
+  const files = tree.filter(
+    (item) => item.path.startsWith(prefix) && item.path.endsWith(".md"),
+  );
+
+  const notes: VaultNote[] = [];
+  for (const file of files) {
+    const note = await fetchNote(env, file.path);
+    if (note) notes.push(note);
+  }
   return notes;
 }
 

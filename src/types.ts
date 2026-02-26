@@ -3,6 +3,7 @@ export interface Bindings {
   CACHE: KVNamespace;
   GITHUB_TOKEN: string;
   GITHUB_REPO: string;
+  API_TOKEN: string;
   NODE_ENV: string;
 }
 
@@ -19,4 +20,10 @@ export interface SearchResult {
   title: string;
   snippet: string;
   score: number;
+}
+
+export interface ShareLink {
+  id: string;
+  path: string;
+  createdAt: string;
 }
