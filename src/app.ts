@@ -27,9 +27,15 @@ export function createApp() {
       layout(
         "Vault",
         `
-        <h1>Vault</h1>
+        <nav class="nav">
+          <a href="/" class="nav-home">dawson.gg</a>
+        </nav>
+        <div class="home-header">
+          <h1>Vault</h1>
+          <p>Notes, ideas, and things worth writing down.</p>
+        </div>
         <form action="/search" method="get" class="search-form">
-          <input type="text" name="q" placeholder="Search public notes..." />
+          <input type="text" name="q" placeholder="Search notes..." />
           <button type="submit">Search</button>
         </form>
         <ul class="note-list">${noteList}</ul>
@@ -44,13 +50,13 @@ export function createApp() {
     const decoded = decodeURIComponent(path);
 
     if (!decoded.startsWith("Public/")) {
-      return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
+      return c.html(layout("Not Found", '<div class="error-page"><h1>404</h1><p>This note doesn\'t exist.</p><a href="/">Go home</a></div>'), 404);
     }
 
     const notes = await getPublicNotesWithCache(c.env);
     const note = notes.find((n) => n.path === decoded);
     if (!note)
-      return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
+      return c.html(layout("Not Found", '<div class="error-page"><h1>404</h1><p>This note doesn\'t exist.</p><a href="/">Go home</a></div>'), 404);
 
     return c.html(
       noteLayout(note),
@@ -63,14 +69,14 @@ export function createApp() {
     const raw = await c.env.CACHE.get(`share:${id}`);
     if (!raw)
       return c.html(
-        layout("Not Found", "<h1>This link doesn't exist or has expired</h1>"),
+        layout("Not Found", '<div class="error-page"><h1>404</h1><p>This link doesn\'t exist or has expired.</p><a href="/">Go home</a></div>'),
         404,
       );
 
     const share = JSON.parse(raw) as ShareLink;
     const note = await fetchNoteByPath(c.env, share.path);
     if (!note)
-      return c.html(layout("Not Found", "<h1>Note not found</h1>"), 404);
+      return c.html(layout("Not Found", '<div class="error-page"><h1>404</h1><p>This note doesn\'t exist.</p><a href="/">Go home</a></div>'), 404);
 
     return c.html(noteLayout(note));
   });
@@ -99,10 +105,12 @@ export function createApp() {
       layout(
         `Search: ${q}`,
         `
-        <a href="/" class="back-link">&larr; Back</a>
-        <h1>Search: ${q}</h1>
+        <nav class="nav">
+          <a href="/" class="nav-home">dawson.gg</a>
+        </nav>
+        <h1>Search: ${escapeHtml(q)}</h1>
         <form action="/search" method="get" class="search-form">
-          <input type="text" name="q" value="${escapeHtml(q)}" placeholder="Search public notes..." />
+          <input type="text" name="q" value="${escapeHtml(q)}" placeholder="Search notes..." />
           <button type="submit">Search</button>
         </form>
         <ul class="search-results">${resultHtml}</ul>
@@ -227,9 +235,14 @@ function noteLayout(note: VaultNote): string {
   return layout(
     note.title,
     `
-    <nav><a href="/" class="back-link">&larr; Back</a></nav>
+    <nav class="nav">
+      <a href="/" class="nav-home">dawson.gg</a>
+    </nav>
     <article>
-      <h1>${note.title}</h1>
+      <header class="note-header">
+        <h1>${note.title}</h1>
+        ${note.frontmatter.created ? `<time>${note.frontmatter.created}</time>` : ""}
+      </header>
       ${renderMarkdown(body)}
     </article>
     `,
@@ -246,122 +259,218 @@ function layout(title: string, body: string): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${title}</title>
+  <title>${title} — dawson.gg</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap');
-
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --bg: #fff;
-      --text: #111;
-      --text-secondary: #737373;
-      --text-faint: #a3a3a3;
-      --link: #111;
-      --link-decoration: #a3a3a3;
-      --border: #e5e5e5;
-      --code-bg: #f5f5f5;
-      --inline-code-bg: #f5f5f5;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, monospace;
+
+      --bg: #faf9f7;
+      --bg-elevated: #fff;
+      --text: #1c1917;
+      --text-secondary: #78716c;
+      --text-faint: #a8a29e;
+      --accent: #c2410c;
+      --link: #1c1917;
+      --link-hover: #c2410c;
+      --border: #e7e5e4;
+      --code-bg: #f5f5f4;
+      --code-border: #e7e5e4;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #111;
-        --text: #fafafa;
-        --text-secondary: #a3a3a3;
-        --text-faint: #737373;
-        --link: #fafafa;
-        --link-decoration: #525252;
-        --border: #262626;
-        --code-bg: #1a1a1a;
-        --inline-code-bg: #262626;
+        --bg: #0c0a09;
+        --bg-elevated: #1c1917;
+        --text: #fafaf9;
+        --text-secondary: #a8a29e;
+        --text-faint: #78716c;
+        --accent: #fb923c;
+        --link: #fafaf9;
+        --link-hover: #fb923c;
+        --border: #292524;
+        --code-bg: #1c1917;
+        --code-border: #292524;
       }
     }
 
-    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
 
     body {
-      font-family: 'STIX Two Text', Georgia, 'Times New Roman', serif;
+      font-family: var(--font-body);
       max-width: 640px;
       margin: 0 auto;
-      padding: 3rem 1.5rem;
-      line-height: 1.3;
+      padding: 2.5rem 1.5rem 4rem;
+      line-height: 1.65;
       color: var(--text);
       background: var(--bg);
-      font-size: 1rem;
+      font-size: 0.9375rem;
+      font-weight: 400;
     }
+
+    /* ─── Navigation ─── */
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 3rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-home {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-style: italic;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.01em;
+    }
+    .nav-home:hover { color: var(--accent); }
+
+    /* ─── Typography ─── */
 
     a {
       color: var(--link);
       text-decoration: underline;
-      text-decoration-color: var(--link-decoration);
+      text-decoration-color: var(--border);
       text-decoration-thickness: 1px;
-      text-underline-offset: 2.5px;
+      text-underline-offset: 3px;
+      transition: text-decoration-color 0.15s ease;
     }
-    a:hover { text-decoration-color: var(--text); }
+    a:hover {
+      text-decoration-color: var(--link-hover);
+      color: var(--link-hover);
+    }
 
-    h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 1.25rem; letter-spacing: -0.02em; }
-    h2 { font-size: 1.25rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.75rem; }
-    h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+    }
+
+    h1 { font-size: 2rem; line-height: 1.2; margin-bottom: 0.5rem; }
+    h2 { font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 0.75rem; }
+    h3 { font-size: 1.2rem; margin-top: 2rem; margin-bottom: 0.5rem; }
 
     p { margin-bottom: 1.25rem; }
+    p:last-child { margin-bottom: 0; }
 
     ul, ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
-    li { margin-bottom: 0.5rem; }
-    ol { list-style-type: decimal; }
-    ul { list-style-type: disc; }
+    li { margin-bottom: 0.4rem; }
+    li::marker { color: var(--text-faint); }
 
     strong { font-weight: 600; }
+    em { font-style: italic; }
+
+    /* ─── Note header ─── */
+
+    .note-header { margin-bottom: 2rem; }
+    .note-header h1 { margin-bottom: 0.5rem; }
+    .note-header time {
+      display: block;
+      font-size: 0.8125rem;
+      color: var(--text-faint);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ─── Code ─── */
 
     code {
-      font-family: 'SF Mono', SFMono-Regular, Menlo, monospace;
-      font-size: 0.85em;
-      background: var(--inline-code-bg);
-      padding: 0.15em 0.35em;
+      font-family: var(--font-mono);
+      font-size: 0.8125em;
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      padding: 0.125em 0.375em;
       border-radius: 4px;
     }
 
     pre {
       background: var(--code-bg);
-      border-radius: 6px;
-      padding: 1rem;
+      border: 1px solid var(--code-border);
+      border-radius: 8px;
+      padding: 1.25rem;
       overflow-x: auto;
-      margin-bottom: 1.25rem;
-      line-height: 1.5;
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
     }
     pre code {
       background: none;
+      border: none;
       padding: 0;
-      font-size: 0.85rem;
+      font-size: 0.8125rem;
     }
+
+    /* ─── Elements ─── */
 
     hr {
       border: none;
       border-top: 1px solid var(--border);
-      margin: 2rem 0;
+      margin: 2.5rem 0;
     }
 
     blockquote {
-      border-left: 2px solid var(--border);
-      padding-left: 1rem;
+      border-left: 2px solid var(--accent);
+      padding-left: 1.25rem;
       color: var(--text-secondary);
       margin-bottom: 1.25rem;
+      font-style: italic;
     }
 
-    article { margin-top: 0.5rem; }
+    img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
 
-    .back-link {
-      display: inline-block;
-      margin-bottom: 2rem;
+    article { margin-top: 0; }
+
+    /* ─── Home page ─── */
+
+    .home-header {
+      margin-bottom: 2.5rem;
+    }
+    .home-header h1 {
+      font-size: 2.25rem;
+      margin-bottom: 0.25rem;
+    }
+    .home-header p {
       color: var(--text-secondary);
-      text-decoration: none;
-      font-size: 0.9rem;
+      font-size: 0.9375rem;
+      margin-bottom: 0;
     }
-    .back-link:hover { color: var(--text); }
 
-    .note-list { list-style: none; padding-left: 0; }
-    .note-list li { margin-bottom: 0.75rem; }
-    .note-list a { font-size: 1rem; }
+    .note-list {
+      list-style: none;
+      padding-left: 0;
+    }
+    .note-list li {
+      margin-bottom: 0;
+    }
+    .note-list a {
+      display: block;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+      text-decoration: none;
+      color: var(--text);
+      transition: color 0.15s ease;
+    }
+    .note-list li:first-child a { border-top: 1px solid var(--border); }
+    .note-list a:hover { color: var(--accent); }
+
+    /* ─── Search ─── */
 
     .search-form {
       display: flex;
@@ -370,30 +479,57 @@ function layout(title: string, body: string): string {
     }
     .search-form input {
       flex: 1;
-      padding: 0.5rem 0.75rem;
+      padding: 0.625rem 0.875rem;
       border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--bg);
+      border-radius: 8px;
+      background: var(--bg-elevated);
       color: var(--text);
-      font-family: inherit;
-      font-size: 0.95rem;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.15s ease;
     }
+    .search-form input:focus { border-color: var(--accent); }
     .search-form input::placeholder { color: var(--text-faint); }
     .search-form button {
-      padding: 0.5rem 1rem;
+      padding: 0.625rem 1.25rem;
       background: var(--text);
       color: var(--bg);
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
-      font-family: inherit;
-      font-size: 0.95rem;
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: opacity 0.15s ease;
     }
+    .search-form button:hover { opacity: 0.85; }
 
     .search-results { list-style: none; padding-left: 0; }
-    .search-results li { margin-bottom: 1.25rem; }
-    .search-results a { font-weight: 600; }
-    .snippet { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem; }
+    .search-results li {
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .search-results a { font-weight: 500; }
+    .snippet {
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+      margin-top: 0.25rem;
+      line-height: 1.5;
+    }
+
+    /* ─── 404 ─── */
+    .error-page {
+      text-align: center;
+      padding-top: 4rem;
+    }
+    .error-page h1 {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+    .error-page p {
+      color: var(--text-secondary);
+    }
   </style>
 </head>
 <body>${body}</body>
