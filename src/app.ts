@@ -27,6 +27,7 @@ export function createApp() {
         ${projectsSection()}
         ${technologiesSection()}
         ${recentPostsSection(recentNotes)}
+        ${footerSection()}
         `,
       ),
     );
@@ -197,66 +198,90 @@ export function createApp() {
 // ─── Section renderers ───
 
 function heroSection(): string {
-  const links = PROFILE.links
-    .map(
-      (l) =>
-        `<a href="${l.url}" class="hero-link" target="_blank" rel="noopener">${l.label}</a>`,
-    )
-    .join("");
-
   return `
-    <nav class="nav">
-      <a href="/" class="nav-home">dawson.gg</a>
-      <a href="/posts" class="nav-link">Posts</a>
-    </nav>
     <section class="hero">
       <h1 class="hero-name">${PROFILE.name}</h1>
       <p class="hero-intro">${PROFILE.intro}</p>
-      <div class="hero-links">${links}</div>
     </section>
   `;
 }
 
+function footerSection(): string {
+  const links = PROFILE.links
+    .map(
+      (l) =>
+        `<a href="${l.url}" class="footer-link" target="_blank" rel="noopener">${l.label}</a>`,
+    )
+    .join("");
+
+  return `
+    <footer class="site-footer">
+      <div class="footer-links">${links}</div>
+      <p class="footer-copy">dawson.gg</p>
+    </footer>
+  `;
+}
+
+type ContribData = { total: number; days: { date: string; level: number }[] };
+
+async function fetchContributions(env: Bindings): Promise<ContribData> {
+  const cacheKey = "github:contributions:v3";
+  const cached = await env.CACHE.get(cacheKey);
+  if (cached) return JSON.parse(cached) as ContribData;
+
+  // Fetch the contributions page — has both the total and day-level data
+  const res = await fetch("https://github.com/users/Dawsson/contributions", {
+    headers: { "User-Agent": "vault-site" },
+  });
+  const html = await res.text();
+
+  // Parse total from heading: multiline "5,130\n contributions\n in the last year"
+  const totalMatch = html.match(/([\d,]+)\s+contributions?\s+in\s+the\s+last\s+year/i);
+  const total = totalMatch ? parseInt(totalMatch[1]!.replace(/,/g, "")) : 0;
+
+  // Parse contribution cells: <td ... data-date="2025-03-02" ... data-level="1" ...>
+  const days: { date: string; level: number }[] = [];
+  const cellRegex = /data-date="(\d{4}-\d{2}-\d{2})"[^>]*data-level="(\d)"/g;
+  let match;
+  while ((match = cellRegex.exec(html)) !== null) {
+    days.push({ date: match[1]!, level: parseInt(match[2]!) });
+  }
+
+  const data: ContribData = { total, days };
+  // Cache for 24 hours
+  await env.CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: 86400 });
+  return data;
+}
+
 async function githubSection(env: Bindings): Promise<string> {
   try {
-    // Check KV cache (1 hour TTL)
-    const cacheKey = "github:contributions";
-    const cached = await env.CACHE.get(cacheKey);
-    let data: { totalContributions: number; weeks: { contributionDays: { date: string; contributionCount: number; color: string }[] }[] };
+    const data = await fetchContributions(env);
+    const days = data.days;
 
-    if (cached) {
-      data = JSON.parse(cached);
-    } else {
-      const query = `query { user(login: "Dawsson") { contributionsCollection { contributionCalendar { totalContributions weeks { contributionDays { date contributionCount color } } } } } }`;
-      const res = await fetch("https://api.github.com/graphql", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-          "Content-Type": "application/json",
-          "User-Agent": "vault-site",
-        },
-        body: JSON.stringify({ query }),
-      });
-      const json = (await res.json()) as any;
-      data = json.data.user.contributionsCollection.contributionCalendar;
-      await env.CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: 3600 });
-    }
+    // Map levels to colors matching GitHub's scheme
+    const levelColors: Record<string, { light: string; dark: string }> = {
+      "0": { light: "#ebedf0", dark: "#161b22" },
+      "1": { light: "#9be9a8", dark: "#0e4429" },
+      "2": { light: "#40c463", dark: "#006d32" },
+      "3": { light: "#30a14e", dark: "#26a641" },
+      "4": { light: "#216e39", dark: "#39d353" },
+    };
 
-    // Render contribution grid as inline SVG
-    const weeks = data.weeks;
+    // Group days into weeks (7 days per column)
     const cellSize = 11;
     const cellGap = 2;
-    const totalW = weeks.length * (cellSize + cellGap);
+    const numWeeks = Math.ceil(days.length / 7);
+    const totalW = numWeeks * (cellSize + cellGap);
 
     let cells = "";
-    for (let wi = 0; wi < weeks.length; wi++) {
-      const week = weeks[wi]!;
-      for (let di = 0; di < week.contributionDays.length; di++) {
-        const day = week.contributionDays[di]!;
-        const x = wi * (cellSize + cellGap);
-        const y = di * (cellSize + cellGap);
-        cells += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${day.color}" data-date="${day.date}" data-count="${day.contributionCount}"><title>${day.date}: ${day.contributionCount} contributions</title></rect>`;
-      }
+    for (let i = 0; i < days.length; i++) {
+      const day = days[i]!;
+      const wi = Math.floor(i / 7);
+      const di = i % 7;
+      const x = wi * (cellSize + cellGap);
+      const y = di * (cellSize + cellGap);
+      const colors = levelColors[String(day.level)] ?? levelColors["0"]!;
+      cells += `<rect class="contrib-cell" x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" data-light="${colors.light}" data-dark="${colors.dark}" data-date="${day.date}"><title>${day.date}</title></rect>`;
     }
 
     return `
@@ -265,13 +290,28 @@ async function githubSection(env: Bindings): Promise<string> {
           <h2 class="section-label">GitHub</h2>
           <a href="https://github.com/Dawsson" class="see-all" target="_blank" rel="noopener">@Dawsson &rarr;</a>
         </div>
-        <p class="github-stat">${data.totalContributions.toLocaleString()} contributions in the last year</p>
+        <p class="github-stat">${data.total.toLocaleString()} contributions in the last year</p>
         <div class="github-graph">
-          <svg width="${totalW}" height="${7 * (cellSize + cellGap) - cellGap}" viewBox="0 0 ${totalW} ${7 * (cellSize + cellGap) - cellGap}">
+          <svg width="${totalW}" height="${7 * (cellSize + cellGap) - cellGap}" viewBox="0 0 ${totalW} ${7 * (cellSize + cellGap) - cellGap}" id="contrib-svg">
             ${cells}
           </svg>
         </div>
       </section>
+      <script>
+        (function() {
+          var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var attr = isDark ? 'data-dark' : 'data-light';
+          document.querySelectorAll('.contrib-cell').forEach(function(r) {
+            r.setAttribute('fill', r.getAttribute(attr) || '#ebedf0');
+          });
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            var a = e.matches ? 'data-dark' : 'data-light';
+            document.querySelectorAll('.contrib-cell').forEach(function(r) {
+              r.setAttribute('fill', r.getAttribute(a) || '#ebedf0');
+            });
+          });
+        })();
+      </script>
     `;
   } catch {
     return "";
@@ -820,25 +860,6 @@ function portfolioLayout(title: string, body: string): string {
       margin-bottom: 1.5rem;
     }
 
-    .hero-links {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .hero-link {
-      font-size: 0.8125rem;
-      color: var(--text-secondary);
-      text-decoration: none;
-      padding: 0.4rem 0.875rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      transition: all 0.15s ease;
-    }
-    .hero-link:hover {
-      color: var(--accent);
-      border-color: var(--accent);
-    }
-
     /* ─── Sections ─── */
 
     .section {
@@ -1094,6 +1115,37 @@ function portfolioLayout(title: string, body: string): string {
       text-decoration: none;
     }
     .see-all:hover { color: var(--accent); }
+
+    /* ─── Footer ─── */
+
+    .site-footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .footer-link {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .footer-link:hover { color: var(--accent); }
+
+    .footer-copy {
+      font-family: var(--font-display);
+      font-style: italic;
+      font-size: 0.875rem;
+      color: var(--text-faint);
+    }
 
     /* ─── 404 ─── */
 

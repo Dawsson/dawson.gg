@@ -24,6 +24,8 @@ export async function fetchAllNotes(env: Bindings): Promise<VaultNote[]> {
       item.path.endsWith(".md") &&
       !item.path.startsWith("Templates/") &&
       !item.path.startsWith("Archive/") &&
+      !item.path.startsWith(".obsidian/") &&
+      !item.path.includes("node_modules/") &&
       item.path !== "CLAUDE.md",
   );
 
