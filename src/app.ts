@@ -315,6 +315,7 @@ function technologiesSection(): string {
           <input type="text" id="tech-filter" class="tech-filter-input" placeholder="Search ${totalCount} technologies..." />
           <button class="tech-toggle" id="tech-toggle" onclick="toggleAll()">Show all ${totalCount}</button>
           <span class="tech-count" id="tech-count">${featuredCount} featured</span>
+          <span class="tech-loading" id="tech-loading"></span>
         </div>
         <div class="cat-buttons">
           <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">All</button>
@@ -394,13 +395,17 @@ function technologiesSection(): string {
         if (q.length < 2) { vectorMatches = null; return; }
         clearTimeout(vectorTimer);
         vectorTimer = setTimeout(function() {
+          document.getElementById('tech-loading').classList.add('active');
           fetch('/api/tech-search?q=' + encodeURIComponent(q))
             .then(function(r) { return r.json(); })
             .then(function(data) {
               vectorMatches = data.results;
               applyFilter();
             })
-            .catch(function() {});
+            .catch(function() {})
+            .finally(function() {
+              document.getElementById('tech-loading').classList.remove('active');
+            });
         }, 250);
       }
       document.getElementById('tech-filter').addEventListener('input', onInput);
@@ -427,13 +432,17 @@ function technologiesSection(): string {
         if (q || cat || all) {
           applyFilter();
           if (q && q.length >= 2) {
+            document.getElementById('tech-loading').classList.add('active');
             fetch('/api/tech-search?q=' + encodeURIComponent(q))
               .then(function(r) { return r.json(); })
               .then(function(data) {
                 vectorMatches = data.results;
                 applyFilter();
               })
-              .catch(function() {});
+              .catch(function() {})
+              .finally(function() {
+                document.getElementById('tech-loading').classList.remove('active');
+              });
           }
         }
       })();
@@ -948,6 +957,18 @@ function portfolioLayout(title: string, body: string): string {
       font-size: 0.75rem;
       color: var(--text-faint);
     }
+
+    .tech-loading {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    .tech-loading.active { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ─── Recent Posts ─── */
 
