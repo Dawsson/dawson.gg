@@ -328,30 +328,42 @@ function technologiesSection(): string {
       var showAll = false;
       var vectorTimer = null;
       var vectorMatches = null;
+
+      function syncToUrl() {
+        var params = new URLSearchParams();
+        var q = document.getElementById('tech-filter').value || '';
+        if (q) params.set('q', q);
+        if (activeCat !== 'all') params.set('cat', activeCat);
+        if (showAll) params.set('all', '1');
+        var str = params.toString();
+        var url = window.location.pathname + (str ? '?' + str : '') + '#technologies';
+        history.replaceState(null, '', url);
+      }
+
       function filterCat(cat) {
         activeCat = cat;
         document.querySelectorAll('.cat-btn').forEach(function(b) {
           b.classList.toggle('active', b.getAttribute('data-cat') === cat);
         });
         applyFilter();
+        syncToUrl();
       }
       function toggleAll() {
         showAll = !showAll;
         var btn = document.getElementById('tech-toggle');
         btn.textContent = showAll ? 'Show featured' : 'Show all ${totalCount}';
         applyFilter();
+        syncToUrl();
       }
       function applyFilter() {
         var q = (document.getElementById('tech-filter').value || '').toLowerCase();
         var hasQuery = q.length > 0;
         var visible = 0;
         var items = document.querySelectorAll('.tech-item');
-        // Build score map from vector results
         var scoreMap = {};
         if (vectorMatches && hasQuery) {
           vectorMatches.forEach(function(m) { scoreMap[m.title.toLowerCase()] = m.score; });
         }
-        // Collect items with scores for sorting
         var scored = [];
         items.forEach(function(el) {
           var name = el.getAttribute('data-name') || '';
@@ -364,7 +376,6 @@ function technologiesSection(): string {
           var show = (matchName || matchVector) && matchCat && matchVisibility;
           scored.push({ el: el, show: show, score: scoreMap[name] || 0, name: name });
         });
-        // Sort by vector score when searching
         if (hasQuery && vectorMatches) {
           scored.sort(function(a, b) { return b.score - a.score; });
           var grid = document.getElementById('tech-grid');
@@ -378,6 +389,7 @@ function technologiesSection(): string {
       }
       function onInput() {
         applyFilter();
+        syncToUrl();
         var q = document.getElementById('tech-filter').value || '';
         if (q.length < 2) { vectorMatches = null; return; }
         clearTimeout(vectorTimer);
@@ -392,6 +404,39 @@ function technologiesSection(): string {
         }, 250);
       }
       document.getElementById('tech-filter').addEventListener('input', onInput);
+
+      // Restore state from URL on load
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var q = params.get('q');
+        var cat = params.get('cat');
+        var all = params.get('all');
+        if (q) {
+          document.getElementById('tech-filter').value = q;
+        }
+        if (cat) {
+          activeCat = cat;
+          document.querySelectorAll('.cat-btn').forEach(function(b) {
+            b.classList.toggle('active', b.getAttribute('data-cat') === cat);
+          });
+        }
+        if (all === '1') {
+          showAll = true;
+          document.getElementById('tech-toggle').textContent = 'Show featured';
+        }
+        if (q || cat || all) {
+          applyFilter();
+          if (q && q.length >= 2) {
+            fetch('/api/tech-search?q=' + encodeURIComponent(q))
+              .then(function(r) { return r.json(); })
+              .then(function(data) {
+                vectorMatches = data.results;
+                applyFilter();
+              })
+              .catch(function() {});
+          }
+        }
+      })();
     </script>
   `;
 }
