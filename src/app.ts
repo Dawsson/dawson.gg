@@ -7,7 +7,7 @@ import {
 } from "./github.ts";
 import { buildIndex, searchNotes } from "./search.ts";
 import { renderMarkdown } from "./render.ts";
-import { PROFILE, PROJECTS, TECHNOLOGIES } from "./data.ts";
+import { PROFILE, PROJECTS, TECHNOLOGIES, CATEGORY_LABELS } from "./data.ts";
 
 export function createApp() {
   const app = new Hono<{ Bindings: Bindings }>();
@@ -253,19 +253,13 @@ function projectsSection(): string {
 }
 
 function technologiesSection(): string {
-  const categories = [
-    { key: "language", label: "Languages" },
-    { key: "framework", label: "Frameworks" },
-    { key: "platform", label: "Platforms" },
-    { key: "database", label: "Databases" },
-    { key: "tool", label: "Tools" },
-  ];
+  const categories = Object.entries(CATEGORY_LABELS).map(([key, label]) => ({ key, label }));
 
-  const allPills = TECHNOLOGIES.map(
+  const allItems = TECHNOLOGIES.map(
     (t) =>
-      `<div class="tech-item" data-name="${t.name.toLowerCase()}" data-cat="${t.category}">
+      `<div class="tech-item${t.featured ? "" : " tech-hidden"}" data-name="${t.name.toLowerCase()}" data-cat="${t.category}" data-featured="${t.featured}">
         <span class="tech-name">${t.name}</span>
-        <span class="tech-cat">${t.category}</span>
+        <span class="tech-cat">${CATEGORY_LABELS[t.category]}</span>
       </div>`,
   ).join("");
 
@@ -276,20 +270,28 @@ function technologiesSection(): string {
     )
     .join("");
 
+  const featuredCount = TECHNOLOGIES.filter((t) => t.featured).length;
+  const totalCount = TECHNOLOGIES.length;
+
   return `
     <section class="section" id="technologies">
       <h2 class="section-label">Technologies</h2>
       <div class="tech-controls">
-        <input type="text" id="tech-filter" class="tech-filter-input" placeholder="Filter..." />
+        <input type="text" id="tech-filter" class="tech-filter-input" placeholder="Search ${totalCount} technologies..." />
         <div class="cat-buttons">
           <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">All</button>
           ${categoryButtons}
         </div>
       </div>
-      <div class="tech-grid" id="tech-grid">${allPills}</div>
+      <div class="tech-grid" id="tech-grid">${allItems}</div>
+      <div class="tech-footer">
+        <button class="tech-toggle" id="tech-toggle" onclick="toggleAll()">Show all ${totalCount}</button>
+        <span class="tech-count" id="tech-count">${featuredCount} featured</span>
+      </div>
     </section>
     <script>
       var activeCat = 'all';
+      var showAll = false;
       function filterCat(cat) {
         activeCat = cat;
         document.querySelectorAll('.cat-btn').forEach(function(b) {
@@ -297,15 +299,28 @@ function technologiesSection(): string {
         });
         applyFilter();
       }
+      function toggleAll() {
+        showAll = !showAll;
+        var btn = document.getElementById('tech-toggle');
+        btn.textContent = showAll ? 'Show featured' : 'Show all ${totalCount}';
+        applyFilter();
+      }
       function applyFilter() {
         var q = (document.getElementById('tech-filter').value || '').toLowerCase();
+        var hasQuery = q.length > 0;
+        var visible = 0;
         document.querySelectorAll('.tech-item').forEach(function(el) {
           var name = el.getAttribute('data-name') || '';
           var cat = el.getAttribute('data-cat') || '';
-          var matchName = !q || name.includes(q);
+          var featured = el.getAttribute('data-featured') === 'true';
+          var matchName = !hasQuery || name.includes(q) || cat.includes(q);
           var matchCat = activeCat === 'all' || cat === activeCat;
-          el.style.display = (matchName && matchCat) ? '' : 'none';
+          var matchVisibility = showAll || hasQuery || featured;
+          var show = matchName && matchCat && matchVisibility;
+          el.style.display = show ? '' : 'none';
+          if (show) visible++;
         });
+        document.getElementById('tech-count').textContent = visible + ' shown';
       }
       document.getElementById('tech-filter').addEventListener('input', applyFilter);
     </script>
@@ -769,6 +784,9 @@ function portfolioLayout(title: string, body: string): string {
       background: var(--bg-card);
       transition: border-color 0.15s ease;
     }
+    .tech-item.tech-hidden {
+      display: none;
+    }
     .tech-item:hover {
       border-color: var(--accent);
     }
@@ -780,6 +798,34 @@ function portfolioLayout(title: string, body: string): string {
 
     .tech-cat {
       font-size: 0.6875rem;
+      color: var(--text-faint);
+    }
+
+    .tech-footer {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .tech-toggle {
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem 0.875rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tech-toggle:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .tech-count {
+      font-size: 0.75rem;
       color: var(--text-faint);
     }
 

@@ -8,10 +8,21 @@ export interface Project {
   featured: boolean;
 }
 
+export type TechCategory =
+  | "language"
+  | "framework"
+  | "platform"
+  | "database"
+  | "tool"
+  | "infra"
+  | "ml"
+  | "mobile"
+  | "gamedev";
+
 export interface Technology {
   slug: string;
   name: string;
-  category: "language" | "framework" | "platform" | "database" | "tool";
+  category: TechCategory;
   featured: boolean;
   description: string;
 }
@@ -71,133 +82,125 @@ export const PROJECTS: Project[] = [
   },
 ];
 
+// ─── Technologies ───
+// featured = shown on page load
+// non-featured = only visible when filtering/searching
+
 export const TECHNOLOGIES: Technology[] = [
-  // Featured
-  {
-    slug: "typescript",
-    name: "TypeScript",
-    category: "language",
-    featured: true,
-    description: "Primary language for everything — frontend, backend, tooling.",
-  },
-  {
-    slug: "react",
-    name: "React",
-    category: "framework",
-    featured: true,
-    description: "UI library for web interfaces and component architecture.",
-  },
-  {
-    slug: "react-native",
-    name: "React Native",
-    category: "framework",
-    featured: true,
-    description: "Cross-platform mobile development for iOS and Android.",
-  },
-  {
-    slug: "expo",
-    name: "Expo",
-    category: "framework",
-    featured: true,
-    description: "React Native toolchain — builds, OTA updates, native modules.",
-  },
-  {
-    slug: "nextjs",
-    name: "Next.js",
-    category: "framework",
-    featured: true,
-    description: "Full-stack React framework for web apps and APIs.",
-  },
-  {
-    slug: "cloudflare",
-    name: "Cloudflare",
-    category: "platform",
-    featured: true,
-    description: "Edge compute, Workers, KV, Vectorize, R2 — the deployment target.",
-  },
-  {
-    slug: "docker",
-    name: "Docker",
-    category: "tool",
-    featured: true,
-    description: "Containerized deployments and reproducible environments.",
-  },
-  {
-    slug: "python",
-    name: "Python",
-    category: "language",
-    featured: true,
-    description: "ML pipelines, data processing, and scripting.",
-  },
-  {
-    slug: "hono",
-    name: "Hono",
-    category: "framework",
-    featured: true,
-    description: "Ultralight web framework for Cloudflare Workers and Bun.",
-  },
-  {
-    slug: "bun",
-    name: "Bun",
-    category: "tool",
-    featured: true,
-    description: "Fast JS runtime — package manager, bundler, test runner.",
-  },
-  // Non-featured
-  {
-    slug: "javascript",
-    name: "JavaScript",
-    category: "language",
-    featured: false,
-    description: "The foundation under TypeScript.",
-  },
-  {
-    slug: "java",
-    name: "Java",
-    category: "language",
-    featured: false,
-    description: "Enterprise and Android development.",
-  },
-  {
-    slug: "html",
-    name: "HTML",
-    category: "language",
-    featured: false,
-    description: "Semantic markup and document structure.",
-  },
-  {
-    slug: "css",
-    name: "CSS",
-    category: "language",
-    featured: false,
-    description: "Styling, layout, animations.",
-  },
-  {
-    slug: "nodejs",
-    name: "Node.js",
-    category: "platform",
-    featured: false,
-    description: "Server-side JavaScript runtime.",
-  },
-  {
-    slug: "postgresql",
-    name: "PostgreSQL",
-    category: "database",
-    featured: true,
-    description: "Relational database for structured data.",
-  },
-  {
-    slug: "mongodb",
-    name: "MongoDB",
-    category: "database",
-    featured: false,
-    description: "Document database for flexible schemas.",
-  },
-  {
-    slug: "planetscale",
-    name: "PlanetScale",
-    category: "database",
-    featured: false,
-    description: "Serverless MySQL with branching.",
-  },
+  // ── Languages (featured) ──
+  { slug: "typescript", name: "TypeScript", category: "language", featured: true, description: "Primary language — frontend, backend, tooling." },
+  { slug: "python", name: "Python", category: "language", featured: true, description: "ML pipelines, data processing, scripting." },
+  { slug: "kotlin", name: "Kotlin", category: "language", featured: true, description: "JVM language — Minecraft plugins, Android, server-side." },
+  { slug: "go", name: "Go", category: "language", featured: true, description: "Systems programming, CLIs, microservices." },
+  { slug: "java", name: "Java", category: "language", featured: true, description: "Minecraft plugins, enterprise backends, Android." },
+  // ── Languages (non-featured) ──
+  { slug: "javascript", name: "JavaScript", category: "language", featured: false, description: "The foundation under TypeScript." },
+  { slug: "rust", name: "Rust", category: "language", featured: false, description: "Systems programming with memory safety." },
+  { slug: "html", name: "HTML", category: "language", featured: false, description: "Semantic markup and document structure." },
+  { slug: "css", name: "CSS", category: "language", featured: false, description: "Styling, layout, animations." },
+  { slug: "glsl", name: "GLSL", category: "language", featured: false, description: "OpenGL shader language for graphics." },
+  { slug: "lua", name: "Lua", category: "language", featured: false, description: "Lightweight scripting language." },
+  { slug: "mdx", name: "MDX", category: "language", featured: false, description: "Markdown with JSX components for docs." },
+  { slug: "shell", name: "Shell/Bash", category: "language", featured: false, description: "Unix scripting and automation." },
+
+  // ── Frameworks (featured) ──
+  { slug: "react", name: "React", category: "framework", featured: true, description: "UI library for web interfaces." },
+  { slug: "react-native", name: "React Native", category: "framework", featured: true, description: "Cross-platform mobile for iOS and Android." },
+  { slug: "nextjs", name: "Next.js", category: "framework", featured: true, description: "Full-stack React framework." },
+  { slug: "svelte", name: "Svelte", category: "framework", featured: true, description: "Compiled UI framework — 31 repos worth." },
+  { slug: "hono", name: "Hono", category: "framework", featured: true, description: "Ultralight web framework for Workers and Bun." },
+  { slug: "expo", name: "Expo", category: "framework", featured: true, description: "React Native toolchain — builds, OTA, native modules." },
+  // ── Frameworks (non-featured) ──
+  { slug: "sveltekit", name: "SvelteKit", category: "framework", featured: false, description: "Full-stack Svelte framework with SSR." },
+  { slug: "shadcn", name: "shadcn/ui", category: "framework", featured: false, description: "Headless UI components for React and Svelte." },
+  { slug: "react-router", name: "React Router", category: "framework", featured: false, description: "Client-side routing for React apps." },
+  { slug: "tanstack-query", name: "TanStack Query", category: "framework", featured: false, description: "Async state management and data fetching." },
+  { slug: "tanstack-router", name: "TanStack Router", category: "framework", featured: false, description: "Type-safe routing with built-in data loading." },
+  { slug: "tanstack-table", name: "TanStack Table", category: "framework", featured: false, description: "Headless table and datagrid utilities." },
+
+  // ── Infrastructure (featured) ──
+  { slug: "docker", name: "Docker", category: "infra", featured: true, description: "Containerized deployments and reproducible environments." },
+  { slug: "kubernetes", name: "Kubernetes", category: "infra", featured: true, description: "Container orchestration at scale." },
+  { slug: "nginx", name: "Nginx", category: "infra", featured: false, description: "Reverse proxy, load balancer, web server." },
+  { slug: "traefik", name: "Traefik", category: "infra", featured: false, description: "Cloud-native reverse proxy with auto-discovery." },
+  { slug: "docker-compose", name: "Docker Compose", category: "infra", featured: false, description: "Multi-container orchestration for local and prod." },
+  { slug: "github-actions", name: "GitHub Actions", category: "infra", featured: false, description: "CI/CD pipelines and automation." },
+  { slug: "self-hosted", name: "Self-hosted Servers", category: "infra", featured: false, description: "Bare metal and VPS server management." },
+
+  // ── Platforms / Cloud (featured) ──
+  { slug: "cloudflare", name: "Cloudflare", category: "platform", featured: true, description: "Workers, KV, Vectorize, R2, D1 — edge everything." },
+  { slug: "aws", name: "AWS", category: "platform", featured: true, description: "EC2, S3, Lambda, RDS, and more." },
+  // ── Platforms (non-featured) ──
+  { slug: "gcp", name: "Google Cloud", category: "platform", featured: false, description: "Compute Engine, Cloud Functions, BigQuery." },
+  { slug: "azure", name: "Azure", category: "platform", featured: false, description: "Azure Functions, Static Web Apps, DevOps." },
+  { slug: "fly-io", name: "Fly.io", category: "platform", featured: false, description: "Edge-deployed containers with global distribution." },
+  { slug: "railway", name: "Railway", category: "platform", featured: false, description: "Deploy anything with zero config." },
+  { slug: "vercel", name: "Vercel", category: "platform", featured: false, description: "Frontend deployments and serverless functions." },
+  { slug: "nodejs", name: "Node.js", category: "platform", featured: false, description: "Server-side JavaScript runtime." },
+
+  // ── Databases (featured) ──
+  { slug: "postgresql", name: "PostgreSQL", category: "database", featured: true, description: "Relational database for structured data." },
+  { slug: "redis", name: "Redis", category: "database", featured: false, description: "In-memory data store, caching, pub/sub." },
+  // ── Databases (non-featured) ──
+  { slug: "mongodb", name: "MongoDB", category: "database", featured: false, description: "Document database for flexible schemas." },
+  { slug: "planetscale", name: "PlanetScale", category: "database", featured: false, description: "Serverless MySQL with branching." },
+  { slug: "sqlite", name: "SQLite", category: "database", featured: false, description: "Embedded relational database." },
+  { slug: "cloudflare-d1", name: "Cloudflare D1", category: "database", featured: false, description: "Edge SQL database on Cloudflare." },
+  { slug: "cloudflare-kv", name: "Cloudflare KV", category: "database", featured: false, description: "Global key-value store at the edge." },
+
+  // ── ML / Data Science ──
+  { slug: "pytorch", name: "PyTorch", category: "ml", featured: true, description: "Deep learning framework for research and production." },
+  { slug: "xgboost", name: "XGBoost", category: "ml", featured: false, description: "Gradient boosting for tabular data." },
+  { slug: "scikit-learn", name: "scikit-learn", category: "ml", featured: false, description: "Classical ML algorithms and preprocessing." },
+  { slug: "pandas", name: "pandas", category: "ml", featured: false, description: "Data manipulation and analysis." },
+  { slug: "numpy", name: "NumPy", category: "ml", featured: false, description: "Numerical computing and array operations." },
+  { slug: "jupyter", name: "Jupyter", category: "ml", featured: false, description: "Interactive notebooks for data exploration." },
+  { slug: "workers-ai", name: "Workers AI", category: "ml", featured: false, description: "Cloudflare's inference API — embeddings, LLMs." },
+  { slug: "openai", name: "OpenAI API", category: "ml", featured: false, description: "GPT, embeddings, and AI integrations." },
+
+  // ── Mobile / App Tools ──
+  { slug: "revenuecat", name: "RevenueCat", category: "mobile", featured: false, description: "In-app purchases and subscription management." },
+  { slug: "superwall", name: "Superwall", category: "mobile", featured: false, description: "Paywall A/B testing and optimization." },
+  { slug: "apps-connect", name: "App Store Connect", category: "mobile", featured: false, description: "iOS app distribution and TestFlight." },
+
+  // ── Analytics / Observability ──
+  { slug: "posthog", name: "PostHog", category: "tool", featured: false, description: "Product analytics, feature flags, session replay." },
+  { slug: "mixpanel", name: "Mixpanel", category: "tool", featured: false, description: "Event-based product analytics." },
+  { slug: "plausible", name: "Plausible", category: "tool", featured: false, description: "Privacy-first web analytics." },
+
+  // ── Dev Tools (featured) ──
+  { slug: "bun", name: "Bun", category: "tool", featured: true, description: "Fast JS runtime — package manager, bundler, test runner." },
+  { slug: "git", name: "Git", category: "tool", featured: false, description: "Version control, branching, collaboration." },
+  { slug: "turborepo", name: "Turborepo", category: "tool", featured: false, description: "Monorepo build orchestration." },
+  // ── Build tools / Linters ──
+  { slug: "vite", name: "Vite", category: "tool", featured: false, description: "Fast frontend build tool with HMR." },
+  { slug: "biome", name: "Biome", category: "tool", featured: false, description: "Fast formatter and linter for JS/TS." },
+  { slug: "eslint", name: "ESLint", category: "tool", featured: false, description: "Pluggable JavaScript linting." },
+  { slug: "prettier", name: "Prettier", category: "tool", featured: false, description: "Opinionated code formatter." },
+  { slug: "oxlint", name: "Oxlint", category: "tool", featured: false, description: "Oxidation-compiler based JS linter." },
+  { slug: "esbuild", name: "esbuild", category: "tool", featured: false, description: "Extremely fast JS/TS bundler." },
+  { slug: "rolldown", name: "Rolldown", category: "tool", featured: false, description: "Rust-based JS bundler, Vite's next backend." },
+  // ── Operating Systems ──
+  { slug: "macos", name: "macOS", category: "platform", featured: false, description: "Primary development machine." },
+  { slug: "linux", name: "Linux", category: "platform", featured: false, description: "Server OS — Ubuntu, Debian, Arch, Fedora." },
+  { slug: "nixos", name: "NixOS", category: "platform", featured: false, description: "Declarative Linux distro with reproducible builds." },
+
+  // ── Minecraft / Game Dev ──
+  { slug: "spigot", name: "Spigot", category: "gamedev", featured: false, description: "Minecraft server API for Java plugins." },
+  { slug: "paper", name: "Paper", category: "gamedev", featured: false, description: "High-performance Minecraft server fork." },
+  { slug: "minestom", name: "Minestom", category: "gamedev", featured: false, description: "Lightweight Minecraft server library." },
+  { slug: "velocity", name: "Velocity", category: "gamedev", featured: false, description: "Modern Minecraft proxy server." },
 ];
+
+// Category display labels
+export const CATEGORY_LABELS: Record<TechCategory, string> = {
+  language: "Languages",
+  framework: "Frameworks",
+  platform: "Platforms",
+  database: "Databases",
+  tool: "Tools",
+  infra: "Infrastructure",
+  ml: "ML & Data",
+  mobile: "Mobile",
+  gamedev: "Game Dev",
+};
