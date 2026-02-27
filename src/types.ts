@@ -1,6 +1,7 @@
 export interface Bindings {
   AI: Ai;
   CACHE: KVNamespace;
+  VECTORIZE: VectorizeIndex;
   GITHUB_TOKEN: string;
   GITHUB_REPO: string;
   API_TOKEN: string;
@@ -20,6 +21,7 @@ export interface SearchResult {
   title: string;
   snippet: string;
   score: number;
+  contentType?: "note" | "project" | "technology";
 }
 
 export interface ShareLink {
