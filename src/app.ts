@@ -31,7 +31,7 @@ export function createApp() {
     );
   });
 
-  // ─── Blog listing (moved from old /) ───
+  // ─── Blog listing ───
 
   app.get("/posts", async (c) => {
     const notes = await getPublicNotesWithCache(c.env);
@@ -48,10 +48,7 @@ export function createApp() {
         `
         <nav class="nav">
           <a href="/" class="nav-home">dawson.gg</a>
-          <div class="nav-links">
-            <a href="/posts">Posts</a>
-            <a href="/search">Search</a>
-          </div>
+          <a href="/posts" class="nav-link">Posts</a>
         </nav>
         <div class="home-header">
           <h1>Posts</h1>
@@ -71,10 +68,7 @@ export function createApp() {
 
     if (!decoded.startsWith("Public/")) {
       return c.html(
-        blogLayout(
-          "Not Found",
-          errorPage("404", "This note doesn't exist."),
-        ),
+        blogLayout("Not Found", errorPage("404", "This note doesn't exist.")),
         404,
       );
     }
@@ -83,10 +77,7 @@ export function createApp() {
     const note = notes.find((n) => n.path === decoded);
     if (!note)
       return c.html(
-        blogLayout(
-          "Not Found",
-          errorPage("404", "This note doesn't exist."),
-        ),
+        blogLayout("Not Found", errorPage("404", "This note doesn't exist.")),
         404,
       );
 
@@ -111,88 +102,11 @@ export function createApp() {
     const note = await fetchNoteByPath(c.env, share.path);
     if (!note)
       return c.html(
-        blogLayout(
-          "Not Found",
-          errorPage("404", "This note doesn't exist."),
-        ),
+        blogLayout("Not Found", errorPage("404", "This note doesn't exist.")),
         404,
       );
 
     return c.html(noteLayout(note));
-  });
-
-  // ─── Search ───
-
-  app.get("/search", async (c) => {
-    const q = c.req.query("q") ?? "";
-    const type = c.req.query("type") as
-      | "note"
-      | "project"
-      | "technology"
-      | undefined;
-    const json = c.req.query("json") === "1";
-
-    if (json) {
-      if (!q.trim()) return c.json({ results: [] });
-      const results = await searchNotes(c.env, q, 10, type);
-      return c.json({ results });
-    }
-
-    let resultHtml = "";
-    if (q.trim()) {
-      const results = await searchNotes(c.env, q, 10, type);
-      resultHtml = results.length
-        ? results
-            .map((r) => {
-              const href =
-                r.contentType === "note"
-                  ? `/p/${encodeURIComponent(r.path)}`
-                  : r.contentType === "project"
-                    ? `/#projects`
-                    : `/#technologies`;
-              const badge =
-                r.contentType === "project"
-                  ? '<span class="badge badge-project">project</span>'
-                  : r.contentType === "technology"
-                    ? '<span class="badge badge-tech">tech</span>'
-                    : '<span class="badge badge-note">post</span>';
-              return `<li>
-                <a href="${href}">${badge} ${escapeHtml(r.title)}</a>
-                <p class="snippet">${escapeHtml(r.snippet)}</p>
-              </li>`;
-            })
-            .join("\n")
-        : "<li>No results found.</li>";
-    }
-
-    return c.html(
-      portfolioLayout(
-        q ? `Search: ${q}` : "Search",
-        `
-        <nav class="nav">
-          <a href="/" class="nav-home">dawson.gg</a>
-          <div class="nav-links">
-            <a href="/posts">Posts</a>
-            <a href="/search">Search</a>
-          </div>
-        </nav>
-        <div class="search-page">
-          <h1>${q ? `Search: ${escapeHtml(q)}` : "Search"}</h1>
-          <form action="/search" method="get" class="search-form">
-            <input type="text" name="q" value="${escapeHtml(q)}" placeholder="Search projects, tech, posts..." />
-            <button type="submit">Search</button>
-          </form>
-          <div class="search-filters">
-            <a href="/search?q=${encodeURIComponent(q)}" class="${!type ? "active" : ""}">All</a>
-            <a href="/search?q=${encodeURIComponent(q)}&type=project" class="${type === "project" ? "active" : ""}">Projects</a>
-            <a href="/search?q=${encodeURIComponent(q)}&type=technology" class="${type === "technology" ? "active" : ""}">Tech</a>
-            <a href="/search?q=${encodeURIComponent(q)}&type=note" class="${type === "note" ? "active" : ""}">Posts</a>
-          </div>
-          ${resultHtml ? `<ul class="search-results">${resultHtml}</ul>` : ""}
-        </div>
-      `,
-      ),
-    );
   });
 
   // ─── Authenticated API (agents + you) ───
@@ -292,13 +206,9 @@ function heroSection(): string {
   return `
     <nav class="nav">
       <a href="/" class="nav-home">dawson.gg</a>
-      <div class="nav-links">
-        <a href="/posts">Posts</a>
-        <a href="/search">Search</a>
-      </div>
+      <a href="/posts" class="nav-link">Posts</a>
     </nav>
     <section class="hero">
-      <p class="hero-label">Software Engineer</p>
       <h1 class="hero-name">${PROFILE.name}</h1>
       <p class="hero-intro">${PROFILE.intro}</p>
       <div class="hero-links">${links}</div>
@@ -313,7 +223,7 @@ function projectsSection(): string {
       const techPills = p.technologies
         .map((t) => `<span class="pill">${t}</span>`)
         .join("");
-      const links = [
+      const projectLinks = [
         p.url
           ? `<a href="${p.url}" target="_blank" rel="noopener">View</a>`
           : "",
@@ -328,7 +238,7 @@ function projectsSection(): string {
           <h3>${p.title}</h3>
           <p>${p.description}</p>
           <div class="project-tech">${techPills}</div>
-          ${links ? `<div class="project-links">${links}</div>` : ""}
+          ${projectLinks ? `<div class="project-links">${projectLinks}</div>` : ""}
         </div>
       `;
     })
@@ -336,64 +246,68 @@ function projectsSection(): string {
 
   return `
     <section class="section" id="projects">
-      <p class="section-label">Projects</p>
+      <h2 class="section-label">Projects</h2>
       <div class="projects-grid">${cards}</div>
     </section>
   `;
 }
 
 function technologiesSection(): string {
-  const featured = TECHNOLOGIES.filter((t) => t.featured);
-  const all = TECHNOLOGIES;
+  const categories = [
+    { key: "language", label: "Languages" },
+    { key: "framework", label: "Frameworks" },
+    { key: "platform", label: "Platforms" },
+    { key: "database", label: "Databases" },
+    { key: "tool", label: "Tools" },
+  ];
 
-  const featuredPills = featured
-    .map(
-      (t) =>
-        `<span class="tech-pill" data-slug="${t.slug}" data-category="${t.category}">
-          <span class="tech-name">${t.name}</span>
-          <span class="tech-desc">${t.description}</span>
-        </span>`,
-    )
-    .join("");
+  const allPills = TECHNOLOGIES.map(
+    (t) =>
+      `<div class="tech-item" data-name="${t.name.toLowerCase()}" data-cat="${t.category}">
+        <span class="tech-name">${t.name}</span>
+        <span class="tech-cat">${t.category}</span>
+      </div>`,
+  ).join("");
 
-  const allPills = all
+  const categoryButtons = categories
     .map(
-      (t) =>
-        `<span class="tech-pill" data-slug="${t.slug}" data-category="${t.category}" data-name="${t.name.toLowerCase()}">
-          <span class="tech-name">${t.name}</span>
-          <span class="tech-desc">${t.description}</span>
-        </span>`,
+      (cat) =>
+        `<button class="cat-btn" data-cat="${cat.key}" onclick="filterCat('${cat.key}')">${cat.label}</button>`,
     )
     .join("");
 
   return `
     <section class="section" id="technologies">
-      <p class="section-label">Technologies</p>
-      <div class="tech-featured" id="tech-featured">${featuredPills}</div>
-      <div class="tech-all" id="tech-all" style="display:none">
-        <input type="text" id="tech-filter" class="tech-filter-input" placeholder="Filter technologies..." />
-        <div class="tech-grid">${allPills}</div>
+      <h2 class="section-label">Technologies</h2>
+      <div class="tech-controls">
+        <input type="text" id="tech-filter" class="tech-filter-input" placeholder="Filter..." />
+        <div class="cat-buttons">
+          <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">All</button>
+          ${categoryButtons}
+        </div>
       </div>
-      <button class="tech-toggle" id="tech-toggle" onclick="toggleTech()">Show all</button>
+      <div class="tech-grid" id="tech-grid">${allPills}</div>
     </section>
     <script>
-      function toggleTech() {
-        const featured = document.getElementById('tech-featured');
-        const all = document.getElementById('tech-all');
-        const btn = document.getElementById('tech-toggle');
-        const showing = all.style.display !== 'none';
-        featured.style.display = showing ? '' : 'none';
-        all.style.display = showing ? 'none' : '';
-        btn.textContent = showing ? 'Show all' : 'Show featured';
-      }
-      document.getElementById('tech-filter')?.addEventListener('input', function(e) {
-        const q = e.target.value.toLowerCase();
-        document.querySelectorAll('#tech-all .tech-pill').forEach(function(el) {
-          const name = el.getAttribute('data-name') || '';
-          const cat = el.getAttribute('data-category') || '';
-          el.style.display = (name.includes(q) || cat.includes(q)) ? '' : 'none';
+      var activeCat = 'all';
+      function filterCat(cat) {
+        activeCat = cat;
+        document.querySelectorAll('.cat-btn').forEach(function(b) {
+          b.classList.toggle('active', b.getAttribute('data-cat') === cat);
         });
-      });
+        applyFilter();
+      }
+      function applyFilter() {
+        var q = (document.getElementById('tech-filter').value || '').toLowerCase();
+        document.querySelectorAll('.tech-item').forEach(function(el) {
+          var name = el.getAttribute('data-name') || '';
+          var cat = el.getAttribute('data-cat') || '';
+          var matchName = !q || name.includes(q);
+          var matchCat = activeCat === 'all' || cat === activeCat;
+          el.style.display = (matchName && matchCat) ? '' : 'none';
+        });
+      }
+      document.getElementById('tech-filter').addEventListener('input', applyFilter);
     </script>
   `;
 }
@@ -409,7 +323,7 @@ function recentPostsSection(notes: VaultNote[]): string {
 
   return `
     <section class="section" id="posts">
-      <p class="section-label">Recent Posts</p>
+      <h2 class="section-label">Recent Posts</h2>
       <ul class="note-list">${items}</ul>
       <a href="/posts" class="see-all">All posts &rarr;</a>
     </section>
@@ -420,10 +334,7 @@ function errorPage(code: string, message: string): string {
   return `
     <nav class="nav">
       <a href="/" class="nav-home">dawson.gg</a>
-      <div class="nav-links">
-        <a href="/posts">Posts</a>
-        <a href="/search">Search</a>
-      </div>
+      <a href="/posts" class="nav-link">Posts</a>
     </nav>
     <div class="error-page">
       <h1>${code}</h1>
@@ -461,10 +372,7 @@ function noteLayout(note: VaultNote): string {
     `
     <nav class="nav">
       <a href="/" class="nav-home">dawson.gg</a>
-      <div class="nav-links">
-        <a href="/posts">Posts</a>
-        <a href="/search">Search</a>
-      </div>
+      <a href="/posts" class="nav-link">Posts</a>
     </nav>
     <article>
       <header class="note-header">
@@ -488,46 +396,47 @@ const SHARED_HEAD = `
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
 `;
 
 const SHARED_CSS = `
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --font-body: 'Space Grotesk', -apple-system, sans-serif;
+    --font-display: 'Instrument Serif', Georgia, serif;
+    --font-body: 'Plus Jakarta Sans', -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, monospace;
 
-    --bg: #0b0b0f;
-    --bg-elevated: #141419;
-    --bg-card: #18181f;
-    --text: #e8e6e3;
-    --text-secondary: #8a8a8e;
-    --text-faint: #555558;
-    --accent: #6ee7b7;
-    --accent-dim: #2d6a52;
-    --link: #e8e6e3;
-    --link-hover: #6ee7b7;
-    --border: #222228;
-    --code-bg: #141419;
-    --code-border: #222228;
+    --bg: #faf9f7;
+    --bg-elevated: #fff;
+    --bg-card: #fff;
+    --text: #1c1917;
+    --text-secondary: #78716c;
+    --text-faint: #a8a29e;
+    --accent: #c2410c;
+    --accent-dim: #fed7aa;
+    --link: #1c1917;
+    --link-hover: #c2410c;
+    --border: #e7e5e4;
+    --code-bg: #f5f5f4;
+    --code-border: #e7e5e4;
   }
 
-  @media (prefers-color-scheme: light) {
+  @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #fafaf9;
-      --bg-elevated: #ffffff;
-      --bg-card: #f5f5f4;
-      --text: #1c1917;
-      --text-secondary: #78716c;
-      --text-faint: #a8a29e;
-      --accent: #059669;
-      --accent-dim: #d1fae5;
-      --link: #1c1917;
-      --link-hover: #059669;
-      --border: #e7e5e4;
-      --code-bg: #f5f5f4;
-      --code-border: #e7e5e4;
+      --bg: #0c0a09;
+      --bg-elevated: #1c1917;
+      --bg-card: #1c1917;
+      --text: #fafaf9;
+      --text-secondary: #a8a29e;
+      --text-faint: #78716c;
+      --accent: #fb923c;
+      --accent-dim: #431407;
+      --link: #fafaf9;
+      --link-hover: #fb923c;
+      --border: #292524;
+      --code-bg: #1c1917;
+      --code-border: #292524;
     }
   }
 
@@ -558,27 +467,22 @@ const SHARED_CSS = `
   }
 
   .nav-home {
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    color: var(--accent);
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-style: italic;
+    color: var(--text);
     text-decoration: none;
     letter-spacing: -0.01em;
-    font-weight: 500;
   }
-  .nav-home:hover { opacity: 0.8; }
+  .nav-home:hover { color: var(--accent); }
 
-  .nav-links {
-    display: flex;
-    gap: 1.5rem;
-  }
-  .nav-links a {
-    font-family: var(--font-mono);
-    font-size: 0.8125rem;
+  .nav-link {
+    font-size: 0.875rem;
     color: var(--text-secondary);
     text-decoration: none;
     transition: color 0.15s ease;
   }
-  .nav-links a:hover { color: var(--accent); }
+  .nav-link:hover { color: var(--accent); }
 
   /* ─── Typography ─── */
 
@@ -596,8 +500,8 @@ const SHARED_CSS = `
   }
 
   h1, h2, h3 {
-    font-family: var(--font-body);
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-weight: 400;
     letter-spacing: -0.02em;
   }
 
@@ -689,27 +593,20 @@ function portfolioLayout(title: string, body: string): string {
       border-bottom: 1px solid var(--border);
     }
 
-    .hero-label {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 0.75rem;
-    }
-
     .hero-name {
+      font-family: var(--font-display);
       font-size: 3.5rem;
-      font-weight: 700;
+      font-weight: 400;
+      font-style: italic;
       letter-spacing: -0.03em;
       line-height: 1.1;
       margin-bottom: 1rem;
     }
 
     .hero-intro {
-      font-size: 1.125rem;
+      font-size: 1.0625rem;
       color: var(--text-secondary);
-      max-width: 600px;
+      max-width: 580px;
       line-height: 1.7;
       margin-bottom: 1.5rem;
     }
@@ -720,11 +617,10 @@ function portfolioLayout(title: string, body: string): string {
     }
 
     .hero-link {
-      font-family: var(--font-mono);
       font-size: 0.8125rem;
       color: var(--text-secondary);
       text-decoration: none;
-      padding: 0.5rem 1rem;
+      padding: 0.4rem 0.875rem;
       border: 1px solid var(--border);
       border-radius: 6px;
       transition: all 0.15s ease;
@@ -741,20 +637,23 @@ function portfolioLayout(title: string, body: string): string {
     }
 
     .section-label {
-      font-family: var(--font-mono);
-      font-size: 0.6875rem;
-      color: var(--text-faint);
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-style: italic;
+      font-weight: 400;
       margin-bottom: 1.5rem;
+      margin-top: 0;
     }
 
     /* ─── Projects ─── */
 
     .projects-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 1rem;
+    }
+    @media (max-width: 640px) {
+      .projects-grid { grid-template-columns: 1fr; }
     }
 
     .project-card {
@@ -762,14 +661,16 @@ function portfolioLayout(title: string, body: string): string {
       border: 1px solid var(--border);
       border-radius: 10px;
       padding: 1.5rem;
-      transition: border-color 0.15s ease;
+      transition: border-color 0.2s ease;
     }
     .project-card:hover {
-      border-color: var(--accent-dim);
+      border-color: var(--accent);
     }
 
     .project-card h3 {
-      font-size: 1.0625rem;
+      font-family: var(--font-body);
+      font-size: 1rem;
+      font-weight: 600;
       margin-bottom: 0.5rem;
       margin-top: 0;
     }
@@ -789,13 +690,12 @@ function portfolioLayout(title: string, body: string): string {
     }
 
     .pill {
-      font-family: var(--font-mono);
       font-size: 0.6875rem;
       color: var(--accent);
-      background: transparent;
-      border: 1px solid var(--accent-dim);
+      background: var(--accent-dim);
       padding: 0.2rem 0.5rem;
       border-radius: 4px;
+      font-weight: 500;
     }
 
     .project-links {
@@ -803,7 +703,6 @@ function portfolioLayout(title: string, body: string): string {
       gap: 1rem;
     }
     .project-links a {
-      font-family: var(--font-mono);
       font-size: 0.75rem;
       color: var(--text-secondary);
       text-decoration: none;
@@ -814,71 +713,82 @@ function portfolioLayout(title: string, body: string): string {
 
     /* ─── Technologies ─── */
 
-    .tech-featured, .tech-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-
-    .tech-pill {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0.75rem 1rem;
-      min-width: 140px;
-      transition: border-color 0.15s ease;
-    }
-    .tech-pill:hover {
-      border-color: var(--accent-dim);
-    }
-
-    .tech-name {
-      display: block;
-      font-weight: 600;
-      font-size: 0.875rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .tech-desc {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      line-height: 1.4;
-    }
-
-    .tech-toggle {
-      display: inline-block;
-      margin-top: 1rem;
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.5rem 1rem;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .tech-toggle:hover {
-      color: var(--accent);
-      border-color: var(--accent);
+    .tech-controls {
+      margin-bottom: 1rem;
     }
 
     .tech-filter-input {
       width: 100%;
-      padding: 0.625rem 0.875rem;
+      max-width: 300px;
+      padding: 0.5rem 0.75rem;
       border: 1px solid var(--border);
       border-radius: 8px;
       background: var(--bg-elevated);
       color: var(--text);
       font-family: var(--font-body);
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       outline: none;
-      margin-bottom: 1rem;
+      margin-bottom: 0.75rem;
       transition: border-color 0.15s ease;
     }
     .tech-filter-input:focus { border-color: var(--accent); }
     .tech-filter-input::placeholder { color: var(--text-faint); }
+
+    .cat-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+    }
+
+    .cat-btn {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      color: var(--text-faint);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 0.3rem 0.625rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .cat-btn:hover {
+      color: var(--text);
+      border-color: var(--text-faint);
+    }
+    .cat-btn.active {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.625rem;
+    }
+
+    .tech-item {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 0.625rem 0.875rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
+      transition: border-color 0.15s ease;
+    }
+    .tech-item:hover {
+      border-color: var(--accent);
+    }
+
+    .tech-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+
+    .tech-cat {
+      font-size: 0.6875rem;
+      color: var(--text-faint);
+    }
 
     /* ─── Recent Posts ─── */
 
@@ -901,101 +811,11 @@ function portfolioLayout(title: string, body: string): string {
     .see-all {
       display: inline-block;
       margin-top: 1rem;
-      font-family: var(--font-mono);
       font-size: 0.8125rem;
       color: var(--text-secondary);
       text-decoration: none;
     }
     .see-all:hover { color: var(--accent); }
-
-    /* ─── Search page ─── */
-
-    .search-page h1 { margin-bottom: 1.5rem; }
-
-    .search-form {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-    .search-form input {
-      flex: 1;
-      padding: 0.625rem 0.875rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--bg-elevated);
-      color: var(--text);
-      font-family: var(--font-body);
-      font-size: 0.875rem;
-      outline: none;
-      transition: border-color 0.15s ease;
-    }
-    .search-form input:focus { border-color: var(--accent); }
-    .search-form input::placeholder { color: var(--text-faint); }
-    .search-form button {
-      padding: 0.625rem 1.25rem;
-      background: var(--accent);
-      color: var(--bg);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-family: var(--font-body);
-      font-size: 0.875rem;
-      font-weight: 600;
-      transition: opacity 0.15s ease;
-    }
-    .search-form button:hover { opacity: 0.85; }
-
-    .search-filters {
-      display: flex;
-      gap: 0.75rem;
-      margin-bottom: 1.5rem;
-    }
-    .search-filters a {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--text-faint);
-      text-decoration: none;
-      padding: 0.375rem 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      transition: all 0.15s ease;
-    }
-    .search-filters a.active {
-      color: var(--accent);
-      border-color: var(--accent);
-    }
-    .search-filters a:hover {
-      color: var(--accent);
-      border-color: var(--accent);
-    }
-
-    .search-results { list-style: none; padding-left: 0; }
-    .search-results li {
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .search-results a { font-weight: 500; text-decoration: none; }
-    .search-results a:hover { color: var(--accent); }
-    .snippet {
-      color: var(--text-secondary);
-      font-size: 0.8125rem;
-      margin-top: 0.25rem;
-      line-height: 1.5;
-    }
-
-    .badge {
-      font-family: var(--font-mono);
-      font-size: 0.625rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      padding: 0.15rem 0.4rem;
-      border-radius: 3px;
-      vertical-align: middle;
-      margin-right: 0.25rem;
-    }
-    .badge-project { color: var(--accent); border: 1px solid var(--accent-dim); }
-    .badge-tech { color: #a78bfa; border: 1px solid #4c1d95; }
-    .badge-note { color: var(--text-faint); border: 1px solid var(--border); }
 
     /* ─── 404 ─── */
 
@@ -1033,25 +853,21 @@ function blogLayout(title: string, body: string): string {
 
     article { margin-top: 0; }
 
-    /* ─── Note header ─── */
-
     .note-header { margin-bottom: 2rem; }
     .note-header h1 { margin-bottom: 0.5rem; }
     .note-header time {
       display: block;
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
+      font-size: 0.8125rem;
       color: var(--text-faint);
       font-variant-numeric: tabular-nums;
     }
-
-    /* ─── Home / Posts ─── */
 
     .home-header {
       margin-bottom: 2.5rem;
     }
     .home-header h1 {
       font-size: 2.25rem;
+      font-style: italic;
       margin-bottom: 0.25rem;
     }
     .home-header p {
@@ -1075,56 +891,6 @@ function blogLayout(title: string, body: string): string {
     }
     .note-list li:first-child a { border-top: 1px solid var(--border); }
     .note-list a:hover { color: var(--accent); }
-
-    /* ─── Search ─── */
-
-    .search-form {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 2rem;
-    }
-    .search-form input {
-      flex: 1;
-      padding: 0.625rem 0.875rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--bg-elevated);
-      color: var(--text);
-      font-family: var(--font-body);
-      font-size: 0.875rem;
-      outline: none;
-      transition: border-color 0.15s ease;
-    }
-    .search-form input:focus { border-color: var(--accent); }
-    .search-form input::placeholder { color: var(--text-faint); }
-    .search-form button {
-      padding: 0.625rem 1.25rem;
-      background: var(--accent);
-      color: var(--bg);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-family: var(--font-body);
-      font-size: 0.875rem;
-      font-weight: 600;
-      transition: opacity 0.15s ease;
-    }
-    .search-form button:hover { opacity: 0.85; }
-
-    .search-results { list-style: none; padding-left: 0; }
-    .search-results li {
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .search-results a { font-weight: 500; }
-    .snippet {
-      color: var(--text-secondary);
-      font-size: 0.8125rem;
-      margin-top: 0.25rem;
-      line-height: 1.5;
-    }
-
-    /* ─── 404 ─── */
 
     .error-page {
       text-align: center;
