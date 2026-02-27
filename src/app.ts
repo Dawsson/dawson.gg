@@ -31,40 +31,6 @@ export function createApp() {
     );
   });
 
-  // ─── Technology vector search (public — only searches technologies) ───
-
-  app.get("/api/tech-search", async (c) => {
-    const q = c.req.query("q") ?? "";
-    if (!q.trim()) return c.json({ results: [] });
-
-    // Check KV cache first (24h TTL — tech list rarely changes)
-    const cacheKey = `tech-search:${q.trim().toLowerCase()}`;
-    const cached = await c.env.CACHE.get(cacheKey);
-    if (cached) return c.json(JSON.parse(cached));
-
-    // Search without filter, then post-filter to technologies only
-    const results = await searchNotes(c.env, q, 50);
-    const techResults = results
-      .filter((r) => r.contentType === "technology" && r.score >= 0.68)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 20);
-
-    const response = {
-      results: techResults.map((r) => ({
-        slug: r.path.replace("tech:", ""),
-        title: r.title,
-        score: r.score,
-      })),
-    };
-
-    // Cache for 24 hours
-    await c.env.CACHE.put(cacheKey, JSON.stringify(response), {
-      expirationTtl: 86400,
-    });
-
-    return c.json(response);
-  });
-
   // ─── Blog listing ───
 
   app.get("/posts", async (c) => {
@@ -291,7 +257,7 @@ function technologiesSection(): string {
 
   const allItems = TECHNOLOGIES.map(
     (t) =>
-      `<div class="tech-item" data-name="${t.name.toLowerCase()}" data-cat="${t.category}" data-featured="${t.featured}" title="${t.name} — ${t.description}" style="${t.featured ? "" : "display:none"}">
+      `<div class="tech-item" data-name="${t.name.toLowerCase()}" data-cat="${t.category}" data-slug="${t.slug}" data-desc="${t.description.toLowerCase()}" data-featured="${t.featured}" title="${t.name} — ${t.description}" style="${t.featured ? "" : "display:none"}">
         <span class="tech-name">${t.name}</span>
         <span class="tech-cat">${CATEGORY_LABELS[t.category]}</span>
       </div>`,
@@ -315,7 +281,7 @@ function technologiesSection(): string {
           <input type="text" id="tech-filter" class="tech-filter-input" placeholder="Search ${totalCount} technologies..." />
           <button class="tech-toggle" id="tech-toggle" onclick="toggleAll()">Show all ${totalCount}</button>
           <span class="tech-count" id="tech-count">${featuredCount} featured</span>
-          <span class="tech-loading" id="tech-loading"></span>
+          <span class="tech-time" id="tech-time"></span>
         </div>
         <div class="cat-buttons">
           <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">All</button>
@@ -327,8 +293,23 @@ function technologiesSection(): string {
     <script>
       var activeCat = 'all';
       var showAll = false;
-      var vectorTimer = null;
-      var vectorMatches = null;
+
+      // Fuzzy match: returns score 0-1. Checks subsequence match + bonuses for consecutive/start matches.
+      function fuzzy(query, target) {
+        if (!query) return 0;
+        if (target.includes(query)) return 1;
+        var qi = 0, score = 0, consecutive = 0, lastIdx = -2;
+        for (var ti = 0; ti < target.length && qi < query.length; ti++) {
+          if (target[ti] === query[qi]) {
+            qi++;
+            consecutive = (ti === lastIdx + 1) ? consecutive + 1 : 1;
+            score += consecutive + (ti === 0 ? 2 : 0);
+            lastIdx = ti;
+          }
+        }
+        if (qi < query.length) return 0;
+        return score / (query.length * 4);
+      }
 
       function syncToUrl() {
         var params = new URLSearchParams();
@@ -349,6 +330,7 @@ function technologiesSection(): string {
         applyFilter();
         syncToUrl();
       }
+
       function toggleAll() {
         showAll = !showAll;
         var btn = document.getElementById('tech-toggle');
@@ -356,69 +338,70 @@ function technologiesSection(): string {
         applyFilter();
         syncToUrl();
       }
+
       function applyFilter() {
+        var t0 = performance.now();
         var q = (document.getElementById('tech-filter').value || '').toLowerCase();
         var hasQuery = q.length > 0;
         var visible = 0;
         var items = document.querySelectorAll('.tech-item');
-        var scoreMap = {};
-        if (vectorMatches && hasQuery) {
-          vectorMatches.forEach(function(m) { scoreMap[m.title.toLowerCase()] = m.score; });
-        }
         var scored = [];
+
         items.forEach(function(el) {
           var name = el.getAttribute('data-name') || '';
           var cat = el.getAttribute('data-cat') || '';
+          var desc = el.getAttribute('data-desc') || '';
+          var slug = el.getAttribute('data-slug') || '';
           var featured = el.getAttribute('data-featured') === 'true';
-          var matchName = !hasQuery || name.includes(q) || cat.includes(q);
-          var matchVector = hasQuery && scoreMap[name] !== undefined;
           var matchCat = activeCat === 'all' || cat === activeCat;
+
+          var score = 0;
+          if (hasQuery) {
+            // Score across multiple fields with weights
+            var nameScore = fuzzy(q, name) * 1.0;
+            var catScore = fuzzy(q, cat) * 0.5;
+            var descScore = fuzzy(q, desc) * 0.6;
+            var slugScore = fuzzy(q, slug) * 0.4;
+            score = Math.max(nameScore, catScore, descScore, slugScore);
+          }
+
           var matchVisibility = showAll || hasQuery || featured;
-          var show = (matchName || matchVector) && matchCat && matchVisibility;
-          scored.push({ el: el, show: show, score: scoreMap[name] || 0, name: name });
+          var show = matchCat && matchVisibility && (!hasQuery || score > 0);
+          scored.push({ el: el, show: show, score: score });
         });
-        if (hasQuery && vectorMatches) {
+
+        // Sort by fuzzy score when searching
+        if (hasQuery) {
           scored.sort(function(a, b) { return b.score - a.score; });
           var grid = document.getElementById('tech-grid');
           scored.forEach(function(s) { grid.appendChild(s.el); });
         }
+
         scored.forEach(function(s) {
           s.el.style.display = s.show ? '' : 'none';
           if (s.show) visible++;
         });
-        document.getElementById('tech-count').textContent = visible + ' shown';
+
+        var elapsed = performance.now() - t0;
+        var timeEl = document.getElementById('tech-time');
+        var countEl = document.getElementById('tech-count');
+        countEl.textContent = visible + ' shown';
+        if (hasQuery) {
+          if (elapsed < 1) {
+            timeEl.textContent = Math.round(elapsed * 1000) + 'µs';
+          } else {
+            timeEl.textContent = elapsed.toFixed(1) + 'ms';
+          }
+        } else {
+          timeEl.textContent = '';
+        }
       }
-      function countTextMatches(q) {
-        var count = 0;
-        document.querySelectorAll('.tech-item').forEach(function(el) {
-          var name = el.getAttribute('data-name') || '';
-          var cat = el.getAttribute('data-cat') || '';
-          if (name.includes(q) || cat.includes(q)) count++;
-        });
-        return count;
-      }
+
       function onInput() {
         applyFilter();
         syncToUrl();
-        var q = (document.getElementById('tech-filter').value || '').toLowerCase();
-        if (q.length < 2) { vectorMatches = null; return; }
-        // Skip vector search if text matching already found 3+ results
-        if (countTextMatches(q) >= 3) { vectorMatches = null; return; }
-        clearTimeout(vectorTimer);
-        vectorTimer = setTimeout(function() {
-          document.getElementById('tech-loading').classList.add('active');
-          fetch('/api/tech-search?q=' + encodeURIComponent(q))
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-              vectorMatches = data.results;
-              applyFilter();
-            })
-            .catch(function() {})
-            .finally(function() {
-              document.getElementById('tech-loading').classList.remove('active');
-            });
-        }, 250);
       }
+
       document.getElementById('tech-filter').addEventListener('input', onInput);
 
       // Restore state from URL on load
@@ -427,9 +410,7 @@ function technologiesSection(): string {
         var q = params.get('q');
         var cat = params.get('cat');
         var all = params.get('all');
-        if (q) {
-          document.getElementById('tech-filter').value = q;
-        }
+        if (q) document.getElementById('tech-filter').value = q;
         if (cat) {
           activeCat = cat;
           document.querySelectorAll('.cat-btn').forEach(function(b) {
@@ -440,22 +421,7 @@ function technologiesSection(): string {
           showAll = true;
           document.getElementById('tech-toggle').textContent = 'Show featured';
         }
-        if (q || cat || all) {
-          applyFilter();
-          if (q && q.length >= 2) {
-            document.getElementById('tech-loading').classList.add('active');
-            fetch('/api/tech-search?q=' + encodeURIComponent(q))
-              .then(function(r) { return r.json(); })
-              .then(function(data) {
-                vectorMatches = data.results;
-                applyFilter();
-              })
-              .catch(function() {})
-              .finally(function() {
-                document.getElementById('tech-loading').classList.remove('active');
-              });
-          }
-        }
+        if (q || cat || all) applyFilter();
       })();
     </script>
   `;
@@ -969,17 +935,11 @@ function portfolioLayout(title: string, body: string): string {
       color: var(--text-faint);
     }
 
-    .tech-loading {
-      display: none;
-      width: 14px;
-      height: 14px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
+    .tech-time {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--text-faint);
     }
-    .tech-loading.active { display: inline-block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ─── Recent Posts ─── */
 
