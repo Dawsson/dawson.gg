@@ -294,21 +294,45 @@ function technologiesSection(): string {
       var activeCat = 'all';
       var showAll = false;
 
-      // Fuzzy match: returns score 0-1. Checks subsequence match + bonuses for consecutive/start matches.
-      function fuzzy(query, target) {
-        if (!query) return 0;
-        if (target.includes(query)) return 1;
+      // Fuzzy match a single word against a target string. Returns 0-1.
+      function fuzzyWord(word, target) {
+        if (!word) return 0;
+        // Exact substring = best match
+        var idx = target.indexOf(word);
+        if (idx !== -1) return 1.0 + (idx === 0 ? 0.2 : 0);
+        // For short queries (<=3 chars), require substring match only — no loose fuzzy
+        if (word.length <= 3) return 0;
+        // Subsequence match with scoring
         var qi = 0, score = 0, consecutive = 0, lastIdx = -2;
-        for (var ti = 0; ti < target.length && qi < query.length; ti++) {
-          if (target[ti] === query[qi]) {
+        for (var ti = 0; ti < target.length && qi < word.length; ti++) {
+          if (target[ti] === word[qi]) {
             qi++;
             consecutive = (ti === lastIdx + 1) ? consecutive + 1 : 1;
             score += consecutive + (ti === 0 ? 2 : 0);
             lastIdx = ti;
           }
         }
-        if (qi < query.length) return 0;
-        return score / (query.length * 4);
+        if (qi < word.length) return 0;
+        // Penalize if target is much longer than the query (reduces false positives)
+        var lenPenalty = word.length / Math.max(target.length, 1);
+        return (score / (word.length * 4)) * (0.5 + 0.5 * lenPenalty);
+      }
+
+      // Multi-word search: all words must match somewhere, scores are combined
+      function searchScore(query, fields) {
+        var words = query.trim().split(/\s+/).filter(function(w) { return w.length > 0; });
+        if (words.length === 0) return 0;
+        var totalScore = 0;
+        for (var wi = 0; wi < words.length; wi++) {
+          var bestWordScore = 0;
+          for (var fi = 0; fi < fields.length; fi++) {
+            var s = fuzzyWord(words[wi], fields[fi].text) * fields[fi].weight;
+            if (s > bestWordScore) bestWordScore = s;
+          }
+          if (bestWordScore === 0) return 0; // All words must match something
+          totalScore += bestWordScore;
+        }
+        return totalScore / words.length;
       }
 
       function syncToUrl() {
@@ -357,12 +381,12 @@ function technologiesSection(): string {
 
           var score = 0;
           if (hasQuery) {
-            // Score across multiple fields with weights
-            var nameScore = fuzzy(q, name) * 1.0;
-            var catScore = fuzzy(q, cat) * 0.5;
-            var descScore = fuzzy(q, desc) * 0.6;
-            var slugScore = fuzzy(q, slug) * 0.4;
-            score = Math.max(nameScore, catScore, descScore, slugScore);
+            score = searchScore(q, [
+              { text: name, weight: 1.0 },
+              { text: slug, weight: 0.8 },
+              { text: desc, weight: 0.6 },
+              { text: cat, weight: 0.5 },
+            ]);
           }
 
           var matchVisibility = showAll || hasQuery || featured;
@@ -370,7 +394,6 @@ function technologiesSection(): string {
           scored.push({ el: el, show: show, score: score });
         });
 
-        // Sort by fuzzy score when searching
         if (hasQuery) {
           scored.sort(function(a, b) { return b.score - a.score; });
           var grid = document.getElementById('tech-grid');
@@ -387,10 +410,11 @@ function technologiesSection(): string {
         var countEl = document.getElementById('tech-count');
         countEl.textContent = visible + ' shown';
         if (hasQuery) {
-          if (elapsed < 1) {
-            timeEl.textContent = Math.round(elapsed * 1000) + 'µs';
+          var us = elapsed * 1000;
+          if (us < 1000) {
+            timeEl.textContent = us.toFixed(1) + 'µs';
           } else {
-            timeEl.textContent = elapsed.toFixed(1) + 'ms';
+            timeEl.textContent = elapsed.toFixed(2) + 'ms';
           }
         } else {
           timeEl.textContent = '';
