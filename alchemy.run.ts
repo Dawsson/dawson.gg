@@ -31,6 +31,10 @@ const site = await Worker("vault-site", {
     GITHUB_REPO: "Dawsson/vault",
     NODE_ENV: process.env.NODE_ENV ?? "development",
   },
+  dev: {
+    remote: true,
+    port: 3002,
+  },
   url: true,
 });
 

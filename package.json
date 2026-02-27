@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bun run --watch src/index.ts",
+    "dev": "bunx alchemy dev",
+    "dev:local": "bun run --watch src/index.ts",
     "deploy": "NODE_ENV=production bun run alchemy.run.ts",
     "destroy": "DESTROY=true bun run alchemy.run.ts",
     "ingest": "bun run scripts/ingest.ts"

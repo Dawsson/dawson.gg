@@ -31,6 +31,21 @@ export function createApp() {
     );
   });
 
+  // ─── Technology vector search (public — only searches technologies) ───
+
+  app.get("/api/tech-search", async (c) => {
+    const q = c.req.query("q") ?? "";
+    if (!q.trim()) return c.json({ results: [] });
+    const results = await searchNotes(c.env, q, 20, "technology");
+    return c.json({
+      results: results.map((r) => ({
+        slug: r.path.replace("tech:", ""),
+        title: r.title,
+        score: r.score,
+      })),
+    });
+  });
+
   // ─── Blog listing ───
 
   app.get("/posts", async (c) => {
@@ -257,7 +272,7 @@ function technologiesSection(): string {
 
   const allItems = TECHNOLOGIES.map(
     (t) =>
-      `<div class="tech-item" data-name="${t.name.toLowerCase()}" data-cat="${t.category}" data-featured="${t.featured}" style="${t.featured ? "" : "display:none"}">
+      `<div class="tech-item" data-name="${t.name.toLowerCase()}" data-cat="${t.category}" data-featured="${t.featured}" title="${t.name} — ${t.description}" style="${t.featured ? "" : "display:none"}">
         <span class="tech-name">${t.name}</span>
         <span class="tech-cat">${CATEGORY_LABELS[t.category]}</span>
       </div>`,
@@ -292,6 +307,8 @@ function technologiesSection(): string {
     <script>
       var activeCat = 'all';
       var showAll = false;
+      var vectorTimer = null;
+      var vectorMatches = null;
       function filterCat(cat) {
         activeCat = cat;
         document.querySelectorAll('.cat-btn').forEach(function(b) {
@@ -309,20 +326,53 @@ function technologiesSection(): string {
         var q = (document.getElementById('tech-filter').value || '').toLowerCase();
         var hasQuery = q.length > 0;
         var visible = 0;
-        document.querySelectorAll('.tech-item').forEach(function(el) {
+        var items = document.querySelectorAll('.tech-item');
+        // Build score map from vector results
+        var scoreMap = {};
+        if (vectorMatches && hasQuery) {
+          vectorMatches.forEach(function(m) { scoreMap[m.title.toLowerCase()] = m.score; });
+        }
+        // Collect items with scores for sorting
+        var scored = [];
+        items.forEach(function(el) {
           var name = el.getAttribute('data-name') || '';
           var cat = el.getAttribute('data-cat') || '';
           var featured = el.getAttribute('data-featured') === 'true';
           var matchName = !hasQuery || name.includes(q) || cat.includes(q);
+          var matchVector = hasQuery && scoreMap[name] !== undefined;
           var matchCat = activeCat === 'all' || cat === activeCat;
           var matchVisibility = showAll || hasQuery || featured;
-          var show = matchName && matchCat && matchVisibility;
-          el.style.display = show ? '' : 'none';
-          if (show) visible++;
+          var show = (matchName || matchVector) && matchCat && matchVisibility;
+          scored.push({ el: el, show: show, score: scoreMap[name] || 0, name: name });
+        });
+        // Sort by vector score when searching
+        if (hasQuery && vectorMatches) {
+          scored.sort(function(a, b) { return b.score - a.score; });
+          var grid = document.getElementById('tech-grid');
+          scored.forEach(function(s) { grid.appendChild(s.el); });
+        }
+        scored.forEach(function(s) {
+          s.el.style.display = s.show ? '' : 'none';
+          if (s.show) visible++;
         });
         document.getElementById('tech-count').textContent = visible + ' shown';
       }
-      document.getElementById('tech-filter').addEventListener('input', applyFilter);
+      function onInput() {
+        applyFilter();
+        var q = document.getElementById('tech-filter').value || '';
+        if (q.length < 2) { vectorMatches = null; return; }
+        clearTimeout(vectorTimer);
+        vectorTimer = setTimeout(function() {
+          fetch('/api/tech-search?q=' + encodeURIComponent(q))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              vectorMatches = data.results;
+              applyFilter();
+            })
+            .catch(function() {});
+        }, 250);
+      }
+      document.getElementById('tech-filter').addEventListener('input', onInput);
     </script>
   `;
 }
