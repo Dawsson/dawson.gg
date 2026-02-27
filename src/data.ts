@@ -30,7 +30,7 @@ export const PROFILE: Profile = {
     "Building products across the stack — from mobile apps to cloud infrastructure. I care about shipping fast, clean architecture, and tools that get out of the way.",
   links: [
     { label: "GitHub", url: "https://github.com/Dawsson" },
-    { label: "X", url: "https://x.com/dawsongg" },
+    { label: "X", url: "https://x.com/DawssonMonroe" },
   ],
 };
 
