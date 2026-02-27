@@ -207,17 +207,21 @@ function heroSection(): string {
 }
 
 function footerSection(): string {
-  const links = PROFILE.links
-    .map(
-      (l) =>
-        `<a href="${l.url}" class="footer-link" target="_blank" rel="noopener">${l.label}</a>`,
-    )
-    .join("");
-
   return `
     <footer class="site-footer">
-      <div class="footer-links">${links}</div>
-      <p class="footer-copy">dawson.gg</p>
+      <div class="footer-grid">
+        <div class="footer-left">
+          <p class="footer-signature">Dawson</p>
+          <p class="footer-copyright">&copy; ${new Date().getFullYear()}</p>
+        </div>
+        <div class="footer-center">
+          <a href="mailto:hello@dawson.gg" class="footer-email">hello@dawson.gg</a>
+        </div>
+        <div class="footer-right">
+          <a href="https://github.com/Dawsson" class="footer-social" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://x.com/DawssonMonroe" class="footer-social" target="_blank" rel="noopener">X</a>
+        </div>
+      </div>
     </footer>
   `;
 }
@@ -647,7 +651,7 @@ const SHARED_HEAD = `
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
 `;
 
 const SHARED_CSS = `
@@ -657,6 +661,7 @@ const SHARED_CSS = `
     --font-display: 'Instrument Serif', Georgia, serif;
     --font-body: 'Plus Jakarta Sans', -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, monospace;
+    --font-hand: 'Caveat', cursive;
 
     --bg: #faf9f7;
     --bg-elevated: #fff;
@@ -1125,12 +1130,13 @@ function portfolioLayout(title: string, body: string): string {
     .note-list a {
       display: block;
       padding: 0.75rem 0;
-      border-bottom: 1px solid var(--border);
       text-decoration: none;
       color: var(--text);
       transition: color 0.15s ease;
     }
-    .note-list li:first-child a { border-top: 1px solid var(--border); }
+    .note-list li + li a {
+      border-top: 1px solid var(--border);
+    }
     .note-list a:hover { color: var(--accent); }
 
     .see-all {
@@ -1145,32 +1151,73 @@ function portfolioLayout(title: string, body: string): string {
     /* ─── Footer ─── */
 
     .site-footer {
-      margin-top: 4rem;
-      padding-top: 2rem;
+      margin-top: 5rem;
+      padding-top: 2.5rem;
       border-top: 1px solid var(--border);
+    }
+
+    .footer-grid {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+
+    .footer-signature {
+      font-family: var(--font-hand);
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.01em;
+      line-height: 1;
+      margin: 0;
+    }
+
+    .footer-copyright {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+      margin: 0;
+    }
+
+    .footer-center {
       text-align: center;
     }
 
-    .footer-links {
-      display: flex;
-      justify-content: center;
-      gap: 1.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .footer-link {
+    .footer-email {
+      font-family: var(--font-mono);
       font-size: 0.8125rem;
       color: var(--text-secondary);
       text-decoration: none;
       transition: color 0.15s ease;
+      letter-spacing: -0.01em;
     }
-    .footer-link:hover { color: var(--accent); }
+    .footer-email:hover { color: var(--accent); }
 
-    .footer-copy {
-      font-family: var(--font-display);
-      font-style: italic;
-      font-size: 0.875rem;
+    .footer-right {
+      display: flex;
+      gap: 1.25rem;
+    }
+
+    .footer-social {
+      font-size: 0.8125rem;
       color: var(--text-faint);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    .footer-social:hover { color: var(--accent); }
+
+    @media (max-width: 640px) {
+      .footer-grid {
+        flex-direction: column;
+        gap: 1.5rem;
+        align-items: flex-start;
+      }
+      .footer-center { text-align: left; }
     }
 
     /* ─── 404 ─── */
