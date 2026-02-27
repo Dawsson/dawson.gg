@@ -23,6 +23,7 @@ export function createApp() {
         "Dawson — Software Engineer",
         `
         ${heroSection()}
+        ${await githubSection(c.env)}
         ${projectsSection()}
         ${technologiesSection()}
         ${recentPostsSection(recentNotes)}
@@ -214,6 +215,67 @@ function heroSection(): string {
       <div class="hero-links">${links}</div>
     </section>
   `;
+}
+
+async function githubSection(env: Bindings): Promise<string> {
+  try {
+    // Check KV cache (1 hour TTL)
+    const cacheKey = "github:contributions";
+    const cached = await env.CACHE.get(cacheKey);
+    let data: { totalContributions: number; weeks: { contributionDays: { date: string; contributionCount: number; color: string }[] }[] };
+
+    if (cached) {
+      data = JSON.parse(cached);
+    } else {
+      const query = `query { user(login: "Dawsson") { contributionsCollection { contributionCalendar { totalContributions weeks { contributionDays { date contributionCount color } } } } } }`;
+      const res = await fetch("https://api.github.com/graphql", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+          "Content-Type": "application/json",
+          "User-Agent": "vault-site",
+        },
+        body: JSON.stringify({ query }),
+      });
+      const json = (await res.json()) as any;
+      data = json.data.user.contributionsCollection.contributionCalendar;
+      await env.CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: 3600 });
+    }
+
+    // Render contribution grid as inline SVG
+    const weeks = data.weeks;
+    const cellSize = 11;
+    const cellGap = 2;
+    const totalW = weeks.length * (cellSize + cellGap);
+
+    let cells = "";
+    for (let wi = 0; wi < weeks.length; wi++) {
+      const week = weeks[wi]!;
+      for (let di = 0; di < week.contributionDays.length; di++) {
+        const day = week.contributionDays[di]!;
+        const x = wi * (cellSize + cellGap);
+        const y = di * (cellSize + cellGap);
+        cells += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" fill="${day.color}" data-date="${day.date}" data-count="${day.contributionCount}"><title>${day.date}: ${day.contributionCount} contributions</title></rect>`;
+      }
+    }
+
+    return `
+      <section class="section" id="github">
+        <div class="section-header">
+          <h2 class="section-label">GitHub</h2>
+          <a href="https://github.com/Dawsson" class="see-all" target="_blank" rel="noopener">@Dawsson &rarr;</a>
+        </div>
+        <p class="github-stat">${data.totalContributions.toLocaleString()} contributions in the last year</p>
+        <div class="github-graph">
+          <svg width="${totalW}" height="${7 * (cellSize + cellGap) - cellGap}" viewBox="0 0 ${totalW} ${7 * (cellSize + cellGap) - cellGap}">
+            ${cells}
+          </svg>
+        </div>
+      </section>
+    `;
+  } catch {
+    return "";
+  }
 }
 
 function projectsSection(): string {
@@ -475,9 +537,11 @@ function recentPostsSection(notes: VaultNote[]): string {
 
   return `
     <section class="section" id="posts">
-      <h2 class="section-label">Recent Posts</h2>
+      <div class="section-header">
+        <h2 class="section-label">Recent Posts</h2>
+        <a href="/posts" class="see-all">All posts &rarr;</a>
+      </div>
       <ul class="note-list">${items}</ul>
-      <a href="/posts" class="see-all">All posts &rarr;</a>
     </section>
   `;
 }
@@ -790,6 +854,32 @@ function portfolioLayout(title: string, body: string): string {
       margin-top: 0;
     }
 
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .section-header .section-label { margin-bottom: 1.5rem; }
+    .section-header .see-all { margin-top: 0; }
+
+    /* ─── GitHub ─── */
+
+    .github-stat {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .github-graph {
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+    .github-graph svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
     /* ─── Projects ─── */
 
     .projects-grid {
@@ -1020,7 +1110,8 @@ function portfolioLayout(title: string, body: string): string {
     }
   </style>
 </head>
-<body>${body}</body>
+<body>${body}
+</body>
 </html>`;
 }
 
