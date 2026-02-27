@@ -36,18 +36,33 @@ export function createApp() {
   app.get("/api/tech-search", async (c) => {
     const q = c.req.query("q") ?? "";
     if (!q.trim()) return c.json({ results: [] });
+
+    // Check KV cache first (24h TTL — tech list rarely changes)
+    const cacheKey = `tech-search:${q.trim().toLowerCase()}`;
+    const cached = await c.env.CACHE.get(cacheKey);
+    if (cached) return c.json(JSON.parse(cached));
+
     // Search without filter, then post-filter to technologies only
     const results = await searchNotes(c.env, q, 50);
     const techResults = results
-      .filter((r) => r.contentType === "technology")
+      .filter((r) => r.contentType === "technology" && r.score >= 0.68)
+      .sort((a, b) => b.score - a.score)
       .slice(0, 20);
-    return c.json({
+
+    const response = {
       results: techResults.map((r) => ({
         slug: r.path.replace("tech:", ""),
         title: r.title,
         score: r.score,
       })),
+    };
+
+    // Cache for 24 hours
+    await c.env.CACHE.put(cacheKey, JSON.stringify(response), {
+      expirationTtl: 86400,
     });
+
+    return c.json(response);
   });
 
   // ─── Blog listing ───
