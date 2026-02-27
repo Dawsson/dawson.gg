@@ -428,7 +428,7 @@ function technologiesSection(): string {
         var countEl = document.getElementById('tech-count');
         countEl.textContent = visible + ' shown';
         if (hasQuery) {
-          timeEl.textContent = elapsed.toFixed(3) + 'ms';
+          timeEl.textContent = elapsed < 1 ? '< 1ms' : elapsed.toFixed(1) + 'ms';
         } else {
           timeEl.textContent = '';
         }
