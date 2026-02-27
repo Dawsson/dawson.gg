@@ -97,6 +97,10 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "rust", name: "Rust", category: "language", featured: false, description: "Systems programming with memory safety." },
   { slug: "html", name: "HTML", category: "language", featured: false, description: "Semantic markup and document structure." },
   { slug: "css", name: "CSS", category: "language", featured: false, description: "Styling, layout, animations." },
+  { slug: "swift", name: "Swift", category: "language", featured: false, description: "iOS and macOS native development." },
+  { slug: "dart", name: "Dart", category: "language", featured: false, description: "Language for Flutter cross-platform apps." },
+  { slug: "c", name: "C", category: "language", featured: false, description: "Low-level systems programming." },
+  { slug: "cpp", name: "C++", category: "language", featured: false, description: "Systems programming, game engines, performance-critical code." },
   { slug: "lua", name: "Lua", category: "language", featured: false, description: "Lightweight scripting language." },
   { slug: "mdx", name: "MDX", category: "language", featured: false, description: "Markdown with JSX components for docs." },
   { slug: "shell", name: "Shell/Bash", category: "language", featured: false, description: "Unix scripting and automation." },
@@ -115,6 +119,17 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "tanstack-query", name: "TanStack Query", category: "framework", featured: false, description: "Async state management and data fetching." },
   { slug: "tanstack-router", name: "TanStack Router", category: "framework", featured: false, description: "Type-safe routing with built-in data loading." },
   { slug: "tanstack-table", name: "TanStack Table", category: "framework", featured: false, description: "Headless table and datagrid utilities." },
+  { slug: "tailwindcss", name: "Tailwind CSS", category: "framework", featured: false, description: "Utility-first CSS framework." },
+  { slug: "flutter", name: "Flutter", category: "framework", featured: false, description: "Cross-platform UI framework with Dart." },
+  { slug: "swiftui", name: "SwiftUI", category: "framework", featured: false, description: "Declarative UI framework for Apple platforms." },
+  { slug: "trpc", name: "tRPC", category: "framework", featured: false, description: "End-to-end typesafe APIs for TypeScript." },
+  { slug: "orpc", name: "oRPC", category: "framework", featured: false, description: "Modern typesafe RPC framework." },
+  { slug: "graphql", name: "GraphQL", category: "framework", featured: false, description: "Query language for APIs with typed schemas." },
+  { slug: "prisma", name: "Prisma", category: "framework", featured: false, description: "Type-safe ORM for Node.js and TypeScript." },
+  { slug: "drizzle", name: "Drizzle", category: "framework", featured: false, description: "Lightweight TypeScript ORM with SQL-like syntax." },
+  { slug: "mongoose", name: "Mongoose", category: "framework", featured: false, description: "MongoDB object modeling for Node.js." },
+  { slug: "zustand", name: "Zustand", category: "framework", featured: false, description: "Lightweight state management for React." },
+  { slug: "websocket", name: "WebSocket", category: "framework", featured: false, description: "Real-time bidirectional communication." },
 
   // ── Infrastructure (featured) ──
   { slug: "docker", name: "Docker", category: "infra", featured: true, description: "Containerized deployments and reproducible environments." },
@@ -123,7 +138,9 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "traefik", name: "Traefik", category: "infra", featured: false, description: "Cloud-native reverse proxy with auto-discovery." },
   { slug: "docker-compose", name: "Docker Compose", category: "infra", featured: false, description: "Multi-container orchestration for local and prod." },
   { slug: "github-actions", name: "GitHub Actions", category: "infra", featured: false, description: "CI/CD pipelines and automation." },
-  { slug: "self-hosted", name: "Self-hosted Servers", category: "infra", featured: false, description: "Bare metal and VPS server management." },
+  { slug: "terraform", name: "Terraform", category: "infra", featured: false, description: "Infrastructure as code for cloud provisioning." },
+  { slug: "alchemy", name: "Alchemy", category: "infra", featured: false, description: "TypeScript-native infrastructure as code." },
+  { slug: "self-hosted", name: "Self-hosted", category: "infra", featured: false, description: "Bare metal and VPS server management." },
 
   // ── Platforms / Cloud (featured) ──
   { slug: "cloudflare", name: "Cloudflare", category: "platform", featured: true, description: "Workers, KV, Vectorize, R2, D1 — edge everything." },
@@ -161,10 +178,28 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "superwall", name: "Superwall", category: "mobile", featured: false, description: "Paywall A/B testing and optimization." },
   { slug: "apps-connect", name: "App Store Connect", category: "mobile", featured: false, description: "iOS app distribution and TestFlight." },
 
+  // ── Auth ──
+  { slug: "better-auth", name: "Better Auth", category: "tool", featured: false, description: "Modern auth library for TypeScript apps." },
+  { slug: "clerk", name: "Clerk", category: "tool", featured: false, description: "Drop-in authentication and user management." },
+  { slug: "authjs", name: "Auth.js", category: "tool", featured: false, description: "Authentication for Next.js and web frameworks." },
+  { slug: "oauth", name: "OAuth", category: "tool", featured: false, description: "Open standard for token-based authorization." },
+  { slug: "jwt", name: "JWT", category: "tool", featured: false, description: "JSON Web Tokens for stateless auth." },
+
   // ── Analytics / Observability ──
   { slug: "posthog", name: "PostHog", category: "tool", featured: false, description: "Product analytics, feature flags, session replay." },
   { slug: "mixpanel", name: "Mixpanel", category: "tool", featured: false, description: "Event-based product analytics." },
   { slug: "plausible", name: "Plausible", category: "tool", featured: false, description: "Privacy-first web analytics." },
+  { slug: "sentry", name: "Sentry", category: "tool", featured: false, description: "Error tracking and performance monitoring." },
+
+  // ── Payments ──
+  { slug: "stripe", name: "Stripe", category: "tool", featured: false, description: "Payment processing and subscription billing." },
+
+  // ── Testing ──
+  { slug: "vitest", name: "Vitest", category: "tool", featured: false, description: "Fast unit testing for Vite projects." },
+  { slug: "playwright", name: "Playwright", category: "tool", featured: false, description: "End-to-end browser testing and automation." },
+
+  // ── Design ──
+  { slug: "figma", name: "Figma", category: "tool", featured: false, description: "Collaborative design and prototyping." },
 
   // ── Dev Tools (featured) ──
   { slug: "bun", name: "Bun", category: "tool", featured: true, description: "Fast JS runtime — package manager, bundler, test runner." },
