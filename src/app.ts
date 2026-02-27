@@ -388,11 +388,22 @@ function technologiesSection(): string {
         });
         document.getElementById('tech-count').textContent = visible + ' shown';
       }
+      function countTextMatches(q) {
+        var count = 0;
+        document.querySelectorAll('.tech-item').forEach(function(el) {
+          var name = el.getAttribute('data-name') || '';
+          var cat = el.getAttribute('data-cat') || '';
+          if (name.includes(q) || cat.includes(q)) count++;
+        });
+        return count;
+      }
       function onInput() {
         applyFilter();
         syncToUrl();
-        var q = document.getElementById('tech-filter').value || '';
+        var q = (document.getElementById('tech-filter').value || '').toLowerCase();
         if (q.length < 2) { vectorMatches = null; return; }
+        // Skip vector search if text matching already found 3+ results
+        if (countTextMatches(q) >= 3) { vectorMatches = null; return; }
         clearTimeout(vectorTimer);
         vectorTimer = setTimeout(function() {
           document.getElementById('tech-loading').classList.add('active');
