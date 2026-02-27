@@ -357,13 +357,6 @@ async function getPublicNotesWithCache(env: Bindings): Promise<VaultNote[]> {
   return notes;
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 function noteLayout(note: VaultNote): string {
   const body = stripLeadingH1(note.content);
