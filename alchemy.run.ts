@@ -22,6 +22,7 @@ const site = await Worker("vault-site", {
   entrypoint: "./src/worker.ts",
   compatibility: "node",
   domains: ["dawson.gg"],
+  crons: ["0 */6 * * *"],
   bindings: {
     AI: ai,
     CACHE: cache,

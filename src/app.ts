@@ -226,25 +226,21 @@ function footerSection(): string {
   `;
 }
 
-type ContribCell = { date: string; level: number; week: number; day: number };
-type ContribData = { total: number; cells: ContribCell[] };
+export type ContribCell = { date: string; level: number; week: number; day: number };
+export type ContribData = { total: number; cells: ContribCell[] };
 
-async function fetchContributions(env: Bindings): Promise<ContribData> {
-  const cacheKey = "github:contributions:v4";
-  const cached = await env.CACHE.get(cacheKey);
-  if (cached) return JSON.parse(cached) as ContribData;
+const CONTRIB_CACHE_KEY = "github:contributions:v4";
+const CONTRIB_TTL = 21600; // 6 hours
 
-  // Fetch the contributions page — has both the total and day-level grid data
+async function fetchContributionsFromGitHub(): Promise<ContribData> {
   const res = await fetch("https://github.com/users/Dawsson/contributions", {
     headers: { "User-Agent": "vault-site" },
   });
   const html = await res.text();
 
-  // Parse total from heading: multiline "5,130\n contributions\n in the last year"
   const totalMatch = html.match(/([\d,]+)\s+contributions?\s+in\s+the\s+last\s+year/i);
   const total = totalMatch ? parseInt(totalMatch[1]!.replace(/,/g, "")) : 0;
 
-  // Parse cells with position: data-ix=week, contribution-day-component-ROW-COL for row
   const cells: ContribCell[] = [];
   const cellRegex = /data-ix="(\d+)"[^>]*data-date="(\d{4}-\d{2}-\d{2})"[^>]*id="contribution-day-component-(\d+)-\d+"[^>]*data-level="(\d)"/g;
   let match;
@@ -257,8 +253,19 @@ async function fetchContributions(env: Bindings): Promise<ContribData> {
     });
   }
 
-  const data: ContribData = { total, cells };
-  await env.CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: 86400 });
+  return { total, cells };
+}
+
+async function fetchContributions(env: Bindings): Promise<ContribData> {
+  const cached = await env.CACHE.get(CONTRIB_CACHE_KEY);
+  if (cached) return JSON.parse(cached) as ContribData;
+  return refreshContributions(env);
+}
+
+/** Force-refresh contributions data into KV cache. Called by cron and as fallback. */
+export async function refreshContributions(env: Bindings): Promise<ContribData> {
+  const data = await fetchContributionsFromGitHub();
+  await env.CACHE.put(CONTRIB_CACHE_KEY, JSON.stringify(data), { expirationTtl: CONTRIB_TTL });
   return data;
 }
 
