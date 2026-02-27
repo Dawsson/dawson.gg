@@ -36,9 +36,13 @@ export function createApp() {
   app.get("/api/tech-search", async (c) => {
     const q = c.req.query("q") ?? "";
     if (!q.trim()) return c.json({ results: [] });
-    const results = await searchNotes(c.env, q, 20, "technology");
+    // Search without filter, then post-filter to technologies only
+    const results = await searchNotes(c.env, q, 50);
+    const techResults = results
+      .filter((r) => r.contentType === "technology")
+      .slice(0, 20);
     return c.json({
-      results: results.map((r) => ({
+      results: techResults.map((r) => ({
         slug: r.path.replace("tech:", ""),
         title: r.title,
         score: r.score,
