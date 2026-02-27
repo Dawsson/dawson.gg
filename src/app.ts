@@ -277,17 +277,17 @@ function technologiesSection(): string {
     <section class="section" id="technologies">
       <h2 class="section-label">Technologies</h2>
       <div class="tech-controls">
-        <input type="text" id="tech-filter" class="tech-filter-input" placeholder="Search ${totalCount} technologies..." />
+        <div class="tech-controls-top">
+          <input type="text" id="tech-filter" class="tech-filter-input" placeholder="Search ${totalCount} technologies..." />
+          <button class="tech-toggle" id="tech-toggle" onclick="toggleAll()">Show all ${totalCount}</button>
+          <span class="tech-count" id="tech-count">${featuredCount} featured</span>
+        </div>
         <div class="cat-buttons">
           <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">All</button>
           ${categoryButtons}
         </div>
       </div>
       <div class="tech-grid" id="tech-grid">${allItems}</div>
-      <div class="tech-footer">
-        <button class="tech-toggle" id="tech-toggle" onclick="toggleAll()">Show all ${totalCount}</button>
-        <span class="tech-count" id="tech-count">${featuredCount} featured</span>
-      </div>
     </section>
     <script>
       var activeCat = 'all';
@@ -726,8 +726,6 @@ function portfolioLayout(title: string, body: string): string {
     }
 
     .tech-filter-input {
-      width: 100%;
-      max-width: 300px;
       padding: 0.5rem 0.75rem;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -736,7 +734,6 @@ function portfolioLayout(title: string, body: string): string {
       font-family: var(--font-body);
       font-size: 0.8125rem;
       outline: none;
-      margin-bottom: 0.75rem;
       transition: border-color 0.15s ease;
     }
     .tech-filter-input:focus { border-color: var(--accent); }
@@ -778,11 +775,13 @@ function portfolioLayout(title: string, body: string): string {
       display: flex;
       align-items: baseline;
       justify-content: space-between;
+      gap: 0.5rem;
       padding: 0.625rem 0.875rem;
       border: 1px solid var(--border);
       border-radius: 8px;
       background: var(--bg-card);
       transition: border-color 0.15s ease;
+      overflow: hidden;
     }
     .tech-item:hover {
       border-color: var(--accent);
@@ -791,18 +790,28 @@ function portfolioLayout(title: string, body: string): string {
     .tech-name {
       font-weight: 600;
       font-size: 0.875rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .tech-cat {
       font-size: 0.6875rem;
       color: var(--text-faint);
+      white-space: nowrap;
+      flex-shrink: 0;
     }
 
-    .tech-footer {
+    .tech-controls-top {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      margin-top: 1rem;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .tech-filter-input {
+      flex: 1;
+      max-width: 300px;
     }
 
     .tech-toggle {
