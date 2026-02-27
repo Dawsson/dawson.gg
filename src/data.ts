@@ -24,6 +24,7 @@ export interface Technology {
   category: TechCategory;
   featured: boolean;
   description: string;
+  keywords?: string;
 }
 
 export interface Profile {
@@ -134,27 +135,27 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "spring-boot", name: "Spring Boot", category: "framework", featured: false, description: "Java framework for production-grade backends." },
 
   // ── Infrastructure (featured) ──
-  { slug: "docker", name: "Docker", category: "infra", featured: true, description: "Containerized deployments and reproducible environments." },
-  { slug: "kubernetes", name: "Kubernetes", category: "infra", featured: true, description: "Container orchestration at scale." },
-  { slug: "nginx", name: "Nginx", category: "infra", featured: false, description: "Reverse proxy, load balancer, web server." },
-  { slug: "traefik", name: "Traefik", category: "infra", featured: false, description: "Cloud-native reverse proxy with auto-discovery." },
-  { slug: "docker-compose", name: "Docker Compose", category: "infra", featured: false, description: "Multi-container orchestration for local and prod." },
+  { slug: "docker", name: "Docker", category: "infra", featured: true, description: "Containerized deployments and reproducible environments.", keywords: "containers devops deploy hosting self-hosting" },
+  { slug: "kubernetes", name: "Kubernetes", category: "infra", featured: true, description: "Container orchestration at scale.", keywords: "k8s containers devops cloud deploy hosting self-hosting" },
+  { slug: "nginx", name: "Nginx", category: "infra", featured: false, description: "Reverse proxy, load balancer, web server.", keywords: "self-hosting hosting deploy load-balancing" },
+  { slug: "traefik", name: "Traefik", category: "infra", featured: false, description: "Cloud-native reverse proxy with auto-discovery.", keywords: "self-hosting hosting deploy load-balancing" },
+  { slug: "docker-compose", name: "Docker Compose", category: "infra", featured: false, description: "Multi-container orchestration for local and prod.", keywords: "containers devops deploy self-hosting hosting" },
   { slug: "github-actions", name: "GitHub Actions", category: "infra", featured: false, description: "CI/CD pipelines and automation." },
   { slug: "terraform", name: "Terraform", category: "infra", featured: false, description: "Infrastructure as code for cloud provisioning." },
   { slug: "pulumi", name: "Pulumi", category: "infra", featured: false, description: "Infrastructure as code with real programming languages." },
   { slug: "alchemy", name: "Alchemy", category: "infra", featured: false, description: "TypeScript-native infrastructure as code." },
-  { slug: "k3s", name: "K3s", category: "infra", featured: false, description: "Lightweight Kubernetes for edge and IoT." },
-  { slug: "self-hosted", name: "Self-hosted", category: "infra", featured: false, description: "Bare metal and VPS server management." },
+  { slug: "k3s", name: "K3s", category: "infra", featured: false, description: "Lightweight Kubernetes for edge and IoT.", keywords: "containers devops self-hosting hosting" },
+  { slug: "self-hosted", name: "Self-hosted", category: "infra", featured: false, description: "Bare metal and VPS server management.", keywords: "self-hosting hosting servers vps dedicated deploy devops" },
 
   // ── Platforms / Cloud (featured) ──
-  { slug: "cloudflare", name: "Cloudflare", category: "platform", featured: true, description: "Workers, KV, Vectorize, R2, D1 — edge everything." },
-  { slug: "aws", name: "AWS", category: "platform", featured: true, description: "EC2, S3, Lambda, RDS, and more." },
+  { slug: "cloudflare", name: "Cloudflare", category: "platform", featured: true, description: "Workers, KV, Vectorize, R2, D1 — edge everything.", keywords: "cloud compute serverless edge hosting deploy cdn" },
+  { slug: "aws", name: "AWS", category: "platform", featured: true, description: "EC2, S3, Lambda, RDS, and more.", keywords: "amazon cloud compute serverless hosting deploy infrastructure" },
   // ── Platforms (non-featured) ──
-  { slug: "gcp", name: "Google Cloud", category: "platform", featured: false, description: "Compute Engine, Cloud Functions, BigQuery." },
-  { slug: "azure", name: "Azure", category: "platform", featured: false, description: "Azure Functions, Static Web Apps, DevOps." },
-  { slug: "fly-io", name: "Fly.io", category: "platform", featured: false, description: "Edge-deployed containers with global distribution." },
-  { slug: "railway", name: "Railway", category: "platform", featured: false, description: "Deploy anything with zero config." },
-  { slug: "vercel", name: "Vercel", category: "platform", featured: false, description: "Frontend deployments and serverless functions." },
+  { slug: "gcp", name: "Google Cloud", category: "platform", featured: false, description: "Compute Engine, Cloud Functions, BigQuery.", keywords: "cloud compute serverless hosting deploy infrastructure" },
+  { slug: "azure", name: "Azure", category: "platform", featured: false, description: "Azure Functions, Static Web Apps, DevOps.", keywords: "microsoft cloud compute serverless hosting deploy infrastructure" },
+  { slug: "fly-io", name: "Fly.io", category: "platform", featured: false, description: "Edge-deployed containers with global distribution.", keywords: "cloud hosting deploy containers" },
+  { slug: "railway", name: "Railway", category: "platform", featured: false, description: "Deploy anything with zero config.", keywords: "cloud hosting deploy paas" },
+  { slug: "vercel", name: "Vercel", category: "platform", featured: false, description: "Frontend deployments and serverless functions.", keywords: "cloud hosting deploy serverless" },
   { slug: "nodejs", name: "Node.js", category: "platform", featured: false, description: "Server-side JavaScript runtime." },
 
   // ── Databases (featured) ──
@@ -174,10 +175,10 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "xgboost", name: "XGBoost", category: "ml", featured: false, description: "Gradient boosting for tabular data." },
   { slug: "pandas", name: "pandas", category: "ml", featured: false, description: "Data manipulation and analysis." },
   { slug: "numpy", name: "NumPy", category: "ml", featured: false, description: "Numerical computing and array operations." },
-  { slug: "workers-ai", name: "Workers AI", category: "ml", featured: false, description: "Cloudflare's inference API — embeddings, LLMs." },
-  { slug: "openai", name: "OpenAI API", category: "ml", featured: false, description: "GPT, embeddings, and AI integrations." },
-  { slug: "claude-api", name: "Claude API", category: "ml", featured: false, description: "Anthropic's API for Claude models." },
-  { slug: "openrouter", name: "OpenRouter", category: "ml", featured: false, description: "Unified API gateway for LLM providers." },
+  { slug: "workers-ai", name: "Workers AI", category: "ml", featured: false, description: "Cloudflare's inference API — embeddings, LLMs.", keywords: "ai artificial intelligence llm compute cloudflare" },
+  { slug: "openai", name: "OpenAI API", category: "ml", featured: false, description: "GPT, embeddings, and AI integrations.", keywords: "ai artificial intelligence llm compute" },
+  { slug: "claude-api", name: "Claude API", category: "ml", featured: false, description: "Anthropic's API for Claude models.", keywords: "ai artificial intelligence llm compute anthropic" },
+  { slug: "openrouter", name: "OpenRouter", category: "ml", featured: false, description: "Unified API gateway for LLM providers.", keywords: "ai artificial intelligence llm compute" },
 
   // ── Mobile / App Tools ──
   { slug: "revenuecat", name: "RevenueCat", category: "mobile", featured: false, description: "In-app purchases and subscription management." },
@@ -223,8 +224,8 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "macos", name: "macOS", category: "platform", featured: false, description: "Primary development machine." },
   { slug: "linux", name: "Linux", category: "platform", featured: false, description: "Server OS — Ubuntu, Debian, Arch, Fedora." },
   // ── AI Tools ──
-  { slug: "claude-code", name: "Claude Code", category: "tool", featured: false, description: "AI-powered coding assistant and CLI." },
-  { slug: "codex", name: "Codex", category: "tool", featured: false, description: "OpenAI code generation model." },
+  { slug: "claude-code", name: "Claude Code", category: "tool", featured: false, description: "AI-powered coding assistant and CLI.", keywords: "ai artificial intelligence llm compute anthropic claude copilot" },
+  { slug: "codex", name: "Codex", category: "tool", featured: false, description: "OpenAI code generation model.", keywords: "ai artificial intelligence llm compute copilot" },
 ];
 
 // Category display labels

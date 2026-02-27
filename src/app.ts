@@ -257,7 +257,7 @@ function technologiesSection(): string {
 
   const allItems = TECHNOLOGIES.map(
     (t) =>
-      `<div class="tech-item" data-name="${t.name.toLowerCase()}" data-cat="${t.category}" data-slug="${t.slug}" data-desc="${t.description.toLowerCase()}" data-featured="${t.featured}" title="${t.name} — ${t.description}" style="${t.featured ? "" : "display:none"}">
+      `<div class="tech-item" data-name="${t.name.toLowerCase()}" data-cat="${t.category}" data-slug="${t.slug}" data-desc="${t.description.toLowerCase()}" data-kw="${(t.keywords || "").toLowerCase()}" data-featured="${t.featured}" title="${t.name} — ${t.description}" style="${t.featured ? "" : "display:none"}">
         <span class="tech-name">${t.name}</span>
         <span class="tech-cat">${CATEGORY_LABELS[t.category]}</span>
       </div>`,
@@ -294,28 +294,44 @@ function technologiesSection(): string {
       var activeCat = 'all';
       var showAll = false;
 
+      // Normalize: strip hyphens/dashes, collapse spaces
+      function norm(s) { return s.replace(/[-_]/g, ' ').replace(/\s+/g, ' '); }
+
       // Fuzzy match a single word against a target string. Returns 0-1.
       function fuzzyWord(word, target) {
         if (!word) return 0;
+        var w = norm(word), t = norm(target);
         // Exact substring = best match
-        var idx = target.indexOf(word);
+        var idx = t.indexOf(w);
         if (idx !== -1) return 1.0 + (idx === 0 ? 0.2 : 0);
+        // Also check individual words in target for prefix match
+        var tWords = t.split(' ');
+        for (var i = 0; i < tWords.length; i++) {
+          if (tWords[i].indexOf(w) === 0) return 0.95;
+        }
         // For short queries (<=3 chars), require substring match only — no loose fuzzy
-        if (word.length <= 3) return 0;
+        if (w.length <= 3) return 0;
+        // Check stem-like matching: if query without common suffixes matches
+        var stems = [w];
+        if (w.endsWith('ing')) stems.push(w.slice(0, -3), w.slice(0, -3) + 'e', w.slice(0, -3) + 'ed');
+        if (w.endsWith('ed')) stems.push(w.slice(0, -2), w.slice(0, -2) + 'ing');
+        if (w.endsWith('s') && w.length > 4) stems.push(w.slice(0, -1));
+        for (var si = 1; si < stems.length; si++) {
+          if (stems[si].length >= 3 && t.indexOf(stems[si]) !== -1) return 0.85;
+        }
         // Subsequence match with scoring
         var qi = 0, score = 0, consecutive = 0, lastIdx = -2;
-        for (var ti = 0; ti < target.length && qi < word.length; ti++) {
-          if (target[ti] === word[qi]) {
+        for (var ti = 0; ti < t.length && qi < w.length; ti++) {
+          if (t[ti] === w[qi]) {
             qi++;
             consecutive = (ti === lastIdx + 1) ? consecutive + 1 : 1;
             score += consecutive + (ti === 0 ? 2 : 0);
             lastIdx = ti;
           }
         }
-        if (qi < word.length) return 0;
-        // Penalize if target is much longer than the query (reduces false positives)
-        var lenPenalty = word.length / Math.max(target.length, 1);
-        return (score / (word.length * 4)) * (0.5 + 0.5 * lenPenalty);
+        if (qi < w.length) return 0;
+        var lenPenalty = w.length / Math.max(t.length, 1);
+        return (score / (w.length * 4)) * (0.5 + 0.5 * lenPenalty);
       }
 
       // Multi-word search: all words must match somewhere, scores are combined
@@ -376,6 +392,7 @@ function technologiesSection(): string {
           var cat = el.getAttribute('data-cat') || '';
           var desc = el.getAttribute('data-desc') || '';
           var slug = el.getAttribute('data-slug') || '';
+          var kw = el.getAttribute('data-kw') || '';
           var featured = el.getAttribute('data-featured') === 'true';
           var matchCat = activeCat === 'all' || cat === activeCat;
 
@@ -384,6 +401,7 @@ function technologiesSection(): string {
             score = searchScore(q, [
               { text: name, weight: 1.0 },
               { text: slug, weight: 0.8 },
+              { text: kw, weight: 0.7 },
               { text: desc, weight: 0.6 },
               { text: cat, weight: 0.5 },
             ]);
@@ -410,12 +428,7 @@ function technologiesSection(): string {
         var countEl = document.getElementById('tech-count');
         countEl.textContent = visible + ' shown';
         if (hasQuery) {
-          var us = elapsed * 1000;
-          if (us < 1000) {
-            timeEl.textContent = us.toFixed(1) + 'µs';
-          } else {
-            timeEl.textContent = elapsed.toFixed(2) + 'ms';
-          }
+          timeEl.textContent = elapsed.toFixed(3) + 'ms';
         } else {
           timeEl.textContent = '';
         }
