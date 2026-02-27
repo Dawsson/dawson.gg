@@ -574,11 +574,33 @@ function technologiesSection(): string {
 
 function recentPostsSection(notes: VaultNote[]): string {
   if (notes.length === 0) return "";
+
   const items = notes
-    .map(
-      (n) =>
-        `<li><a href="/p/${encodeURIComponent(n.path)}">${n.title}</a></li>`,
-    )
+    .map((n) => {
+      const date = n.frontmatter.created
+        ? formatDate(String(n.frontmatter.created))
+        : "";
+      // Get a clean snippet from content — strip markdown headings, links, frontmatter
+      const snippet = n.content
+        .replace(/^#+ .*/gm, "")
+        .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+        .replace(/[*_`~]/g, "")
+        .trim()
+        .slice(0, 140)
+        .trim();
+      const ellipsis = n.content.length > 140 ? "..." : "";
+
+      return `
+        <a href="/p/${encodeURIComponent(n.path)}" class="post-card">
+          <div class="post-card-content">
+            <h3 class="post-card-title">${n.title}</h3>
+            ${snippet ? `<p class="post-card-snippet">${snippet}${ellipsis}</p>` : ""}
+          </div>
+          ${date ? `<time class="post-card-date">${date}</time>` : ""}
+          <span class="post-card-arrow">&rarr;</span>
+        </a>
+      `;
+    })
     .join("");
 
   return `
@@ -587,9 +609,23 @@ function recentPostsSection(notes: VaultNote[]): string {
         <h2 class="section-label">Recent Posts</h2>
         <a href="/posts" class="see-all">All posts &rarr;</a>
       </div>
-      <ul class="note-list">${items}</ul>
+      <div class="posts-list">${items}</div>
     </section>
   `;
+}
+
+function formatDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
 }
 
 function errorPage(code: string, message: string): string {
@@ -1122,22 +1158,71 @@ function portfolioLayout(title: string, body: string): string {
 
     /* ─── Recent Posts ─── */
 
-    .note-list {
-      list-style: none;
-      padding-left: 0;
+    .posts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
     }
-    .note-list li { margin-bottom: 0; }
-    .note-list a {
-      display: block;
-      padding: 0.75rem 0;
+
+    .post-card {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 1.25rem 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 10px;
       text-decoration: none;
       color: var(--text);
-      transition: color 0.15s ease;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      margin-bottom: 0.625rem;
     }
-    .note-list li + li a {
-      border-top: 1px solid var(--border);
+    .post-card:hover {
+      border-color: var(--accent);
+      background: var(--bg-card);
     }
-    .note-list a:hover { color: var(--accent); }
+
+    .post-card-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .post-card-title {
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .post-card-snippet {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      margin: 0.375rem 0 0;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .post-card-date {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    .post-card-arrow {
+      font-size: 1rem;
+      color: var(--text-faint);
+      transition: color 0.15s ease, transform 0.15s ease;
+      flex-shrink: 0;
+    }
+    .post-card:hover .post-card-arrow {
+      color: var(--accent);
+      transform: translateX(3px);
+    }
 
     .see-all {
       display: inline-block;
