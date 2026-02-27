@@ -11,14 +11,9 @@ export async function searchNotes(
 ): Promise<SearchResult[]> {
   const queryEmbedding = await embed(env, query);
 
-  const filter: VectorizeVectorMetadataFilter = {};
-  if (contentType) {
-    filter.contentType = contentType;
-  }
-
   const matches = await env.VECTORIZE.query(queryEmbedding, {
     topK: limit,
-    filter: contentType ? filter : undefined,
+    filter: contentType ? { contentType: { $eq: contentType } } : undefined,
     returnMetadata: "all",
   });
 
