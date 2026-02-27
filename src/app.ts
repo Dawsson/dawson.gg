@@ -222,14 +222,15 @@ function footerSection(): string {
   `;
 }
 
-type ContribData = { total: number; days: { date: string; level: number }[] };
+type ContribCell = { date: string; level: number; week: number; day: number };
+type ContribData = { total: number; cells: ContribCell[] };
 
 async function fetchContributions(env: Bindings): Promise<ContribData> {
-  const cacheKey = "github:contributions:v3";
+  const cacheKey = "github:contributions:v4";
   const cached = await env.CACHE.get(cacheKey);
   if (cached) return JSON.parse(cached) as ContribData;
 
-  // Fetch the contributions page — has both the total and day-level data
+  // Fetch the contributions page — has both the total and day-level grid data
   const res = await fetch("https://github.com/users/Dawsson/contributions", {
     headers: { "User-Agent": "vault-site" },
   });
@@ -239,16 +240,20 @@ async function fetchContributions(env: Bindings): Promise<ContribData> {
   const totalMatch = html.match(/([\d,]+)\s+contributions?\s+in\s+the\s+last\s+year/i);
   const total = totalMatch ? parseInt(totalMatch[1]!.replace(/,/g, "")) : 0;
 
-  // Parse contribution cells: <td ... data-date="2025-03-02" ... data-level="1" ...>
-  const days: { date: string; level: number }[] = [];
-  const cellRegex = /data-date="(\d{4}-\d{2}-\d{2})"[^>]*data-level="(\d)"/g;
+  // Parse cells with position: data-ix=week, contribution-day-component-ROW-COL for row
+  const cells: ContribCell[] = [];
+  const cellRegex = /data-ix="(\d+)"[^>]*data-date="(\d{4}-\d{2}-\d{2})"[^>]*id="contribution-day-component-(\d+)-\d+"[^>]*data-level="(\d)"/g;
   let match;
   while ((match = cellRegex.exec(html)) !== null) {
-    days.push({ date: match[1]!, level: parseInt(match[2]!) });
+    cells.push({
+      date: match[2]!,
+      level: parseInt(match[4]!),
+      week: parseInt(match[1]!),
+      day: parseInt(match[3]!),
+    });
   }
 
-  const data: ContribData = { total, days };
-  // Cache for 24 hours
+  const data: ContribData = { total, cells };
   await env.CACHE.put(cacheKey, JSON.stringify(data), { expirationTtl: 86400 });
   return data;
 }
@@ -256,59 +261,56 @@ async function fetchContributions(env: Bindings): Promise<ContribData> {
 async function githubSection(env: Bindings): Promise<string> {
   try {
     const data = await fetchContributions(env);
-    const days = data.days;
 
-    // Map levels to colors matching GitHub's scheme
     const levelColors: Record<string, { light: string; dark: string }> = {
-      "0": { light: "#ebedf0", dark: "#161b22" },
+      "0": { light: "#ebedf0", dark: "#1c1917" },
       "1": { light: "#9be9a8", dark: "#0e4429" },
       "2": { light: "#40c463", dark: "#006d32" },
       "3": { light: "#30a14e", dark: "#26a641" },
       "4": { light: "#216e39", dark: "#39d353" },
     };
 
-    // Group days into weeks (7 days per column)
-    const cellSize = 11;
-    const cellGap = 2;
-    const numWeeks = Math.ceil(days.length / 7);
-    const totalW = numWeeks * (cellSize + cellGap);
+    const cellSize = 10;
+    const cellGap = 3;
+    const step = cellSize + cellGap;
+    const maxWeek = Math.max(...data.cells.map((c) => c.week));
+    const totalW = (maxWeek + 1) * step;
+    const totalH = 7 * step - cellGap;
 
-    let cells = "";
-    for (let i = 0; i < days.length; i++) {
-      const day = days[i]!;
-      const wi = Math.floor(i / 7);
-      const di = i % 7;
-      const x = wi * (cellSize + cellGap);
-      const y = di * (cellSize + cellGap);
-      const colors = levelColors[String(day.level)] ?? levelColors["0"]!;
-      cells += `<rect class="contrib-cell" x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" data-light="${colors.light}" data-dark="${colors.dark}" data-date="${day.date}"><title>${day.date}</title></rect>`;
+    let rects = "";
+    for (const c of data.cells) {
+      const x = c.week * step;
+      const y = c.day * step;
+      const colors = levelColors[String(c.level)] ?? levelColors["0"]!;
+      rects += `<rect class="contrib-cell" x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2" data-light="${colors.light}" data-dark="${colors.dark}"><title>${c.date}</title></rect>`;
     }
 
     return `
       <section class="section" id="github">
-        <div class="section-header">
-          <h2 class="section-label">GitHub</h2>
-          <a href="https://github.com/Dawsson" class="see-all" target="_blank" rel="noopener">@Dawsson &rarr;</a>
+        <div class="github-header">
+          <div class="github-info">
+            <h2 class="section-label" style="margin-bottom:0">GitHub</h2>
+            <span class="github-stat">${data.total.toLocaleString()} contributions in the last year</span>
+          </div>
+          <a href="https://github.com/Dawsson" class="github-profile-link" target="_blank" rel="noopener">@Dawsson &rarr;</a>
         </div>
-        <p class="github-stat">${data.total.toLocaleString()} contributions in the last year</p>
         <div class="github-graph">
-          <svg width="${totalW}" height="${7 * (cellSize + cellGap) - cellGap}" viewBox="0 0 ${totalW} ${7 * (cellSize + cellGap) - cellGap}" id="contrib-svg">
-            ${cells}
+          <svg viewBox="0 0 ${totalW} ${totalH}" id="contrib-svg">
+            ${rects}
           </svg>
         </div>
       </section>
       <script>
         (function() {
-          var isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          var attr = isDark ? 'data-dark' : 'data-light';
-          document.querySelectorAll('.contrib-cell').forEach(function(r) {
-            r.setAttribute('fill', r.getAttribute(attr) || '#ebedf0');
-          });
-          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-            var a = e.matches ? 'data-dark' : 'data-light';
+          function applyColors(isDark) {
+            var attr = isDark ? 'data-dark' : 'data-light';
             document.querySelectorAll('.contrib-cell').forEach(function(r) {
-              r.setAttribute('fill', r.getAttribute(a) || '#ebedf0');
+              r.setAttribute('fill', r.getAttribute(attr) || '#ebedf0');
             });
+          }
+          applyColors(window.matchMedia('(prefers-color-scheme: dark)').matches);
+          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            applyColors(e.matches);
           });
         })();
       </script>
@@ -885,15 +887,39 @@ function portfolioLayout(title: string, body: string): string {
 
     /* ─── GitHub ─── */
 
+    .github-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .github-info {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+    }
+
     .github-stat {
       font-size: 0.875rem;
       color: var(--text-secondary);
-      margin-bottom: 1rem;
     }
+
+    .github-profile-link {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-family: var(--font-mono);
+      transition: color 0.15s ease;
+    }
+    .github-profile-link:hover { color: var(--accent); }
 
     .github-graph {
       overflow-x: auto;
-      padding-bottom: 0.5rem;
+      padding: 1rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
     }
     .github-graph svg {
       display: block;
