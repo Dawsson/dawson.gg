@@ -257,7 +257,7 @@ function technologiesSection(): string {
 
   const allItems = TECHNOLOGIES.map(
     (t) =>
-      `<div class="tech-item${t.featured ? "" : " tech-hidden"}" data-name="${t.name.toLowerCase()}" data-cat="${t.category}" data-featured="${t.featured}">
+      `<div class="tech-item" data-name="${t.name.toLowerCase()}" data-cat="${t.category}" data-featured="${t.featured}" style="${t.featured ? "" : "display:none"}">
         <span class="tech-name">${t.name}</span>
         <span class="tech-cat">${CATEGORY_LABELS[t.category]}</span>
       </div>`,
@@ -783,9 +783,6 @@ function portfolioLayout(title: string, body: string): string {
       border-radius: 8px;
       background: var(--bg-card);
       transition: border-color 0.15s ease;
-    }
-    .tech-item.tech-hidden {
-      display: none;
     }
     .tech-item:hover {
       border-color: var(--accent);
