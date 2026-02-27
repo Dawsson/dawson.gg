@@ -8,6 +8,7 @@ Bun.serve({
     return app.fetch(req, {
       AI: null,
       CACHE: null,
+      VECTORIZE: null,
       GITHUB_TOKEN: process.env.GITHUB_TOKEN ?? "",
       GITHUB_REPO: "Dawsson/vault",
       NODE_ENV: "development",

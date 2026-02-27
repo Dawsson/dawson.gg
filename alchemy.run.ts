@@ -1,5 +1,5 @@
 import alchemy, { secret } from "alchemy";
-import { Ai, KVNamespace, Worker } from "alchemy/cloudflare";
+import { Ai, KVNamespace, VectorizeIndex, Worker } from "alchemy/cloudflare";
 
 const app = await alchemy("vault-site", {
   phase: process.env.DESTROY ? "destroy" : "up",
@@ -11,6 +11,12 @@ const cache = await KVNamespace("vault-cache", {
   title: "vault-cache",
 });
 
+const vectorIndex = await VectorizeIndex("vault-search", {
+  dimensions: 768,
+  metric: "cosine",
+  adopt: true,
+});
+
 const site = await Worker("vault-site", {
   name: "vault-site",
   entrypoint: "./src/worker.ts",
@@ -19,6 +25,7 @@ const site = await Worker("vault-site", {
   bindings: {
     AI: ai,
     CACHE: cache,
+    VECTORIZE: vectorIndex,
     GITHUB_TOKEN: secret(process.env.GITHUB_TOKEN),
     API_TOKEN: secret(process.env.API_TOKEN),
     GITHUB_REPO: "Dawsson/vault",
