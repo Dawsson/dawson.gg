@@ -130,6 +130,8 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "mongoose", name: "Mongoose", category: "framework", featured: false, description: "MongoDB object modeling for Node.js." },
   { slug: "zustand", name: "Zustand", category: "framework", featured: false, description: "Lightweight state management for React." },
   { slug: "websocket", name: "WebSocket", category: "framework", featured: false, description: "Real-time bidirectional communication." },
+  { slug: "express", name: "Express", category: "framework", featured: false, description: "Minimal Node.js web framework." },
+  { slug: "spring-boot", name: "Spring Boot", category: "framework", featured: false, description: "Java framework for production-grade backends." },
 
   // ── Infrastructure (featured) ──
   { slug: "docker", name: "Docker", category: "infra", featured: true, description: "Containerized deployments and reproducible environments." },
@@ -139,7 +141,9 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "docker-compose", name: "Docker Compose", category: "infra", featured: false, description: "Multi-container orchestration for local and prod." },
   { slug: "github-actions", name: "GitHub Actions", category: "infra", featured: false, description: "CI/CD pipelines and automation." },
   { slug: "terraform", name: "Terraform", category: "infra", featured: false, description: "Infrastructure as code for cloud provisioning." },
+  { slug: "pulumi", name: "Pulumi", category: "infra", featured: false, description: "Infrastructure as code with real programming languages." },
   { slug: "alchemy", name: "Alchemy", category: "infra", featured: false, description: "TypeScript-native infrastructure as code." },
+  { slug: "k3s", name: "K3s", category: "infra", featured: false, description: "Lightweight Kubernetes for edge and IoT." },
   { slug: "self-hosted", name: "Self-hosted", category: "infra", featured: false, description: "Bare metal and VPS server management." },
 
   // ── Platforms / Cloud (featured) ──
@@ -172,6 +176,8 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "numpy", name: "NumPy", category: "ml", featured: false, description: "Numerical computing and array operations." },
   { slug: "workers-ai", name: "Workers AI", category: "ml", featured: false, description: "Cloudflare's inference API — embeddings, LLMs." },
   { slug: "openai", name: "OpenAI API", category: "ml", featured: false, description: "GPT, embeddings, and AI integrations." },
+  { slug: "claude-api", name: "Claude API", category: "ml", featured: false, description: "Anthropic's API for Claude models." },
+  { slug: "openrouter", name: "OpenRouter", category: "ml", featured: false, description: "Unified API gateway for LLM providers." },
 
   // ── Mobile / App Tools ──
   { slug: "revenuecat", name: "RevenueCat", category: "mobile", featured: false, description: "In-app purchases and subscription management." },
