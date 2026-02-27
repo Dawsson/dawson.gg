@@ -16,8 +16,7 @@ export type TechCategory =
   | "tool"
   | "infra"
   | "ml"
-  | "mobile"
-  | "gamedev";
+  | "mobile";
 
 export interface Technology {
   slug: string;
@@ -98,7 +97,6 @@ export const TECHNOLOGIES: Technology[] = [
   { slug: "rust", name: "Rust", category: "language", featured: false, description: "Systems programming with memory safety." },
   { slug: "html", name: "HTML", category: "language", featured: false, description: "Semantic markup and document structure." },
   { slug: "css", name: "CSS", category: "language", featured: false, description: "Styling, layout, animations." },
-  { slug: "glsl", name: "GLSL", category: "language", featured: false, description: "OpenGL shader language for graphics." },
   { slug: "lua", name: "Lua", category: "language", featured: false, description: "Lightweight scripting language." },
   { slug: "mdx", name: "MDX", category: "language", featured: false, description: "Markdown with JSX components for docs." },
   { slug: "shell", name: "Shell/Bash", category: "language", featured: false, description: "Unix scripting and automation." },
@@ -141,6 +139,8 @@ export const TECHNOLOGIES: Technology[] = [
   // ── Databases (featured) ──
   { slug: "postgresql", name: "PostgreSQL", category: "database", featured: true, description: "Relational database for structured data." },
   { slug: "redis", name: "Redis", category: "database", featured: false, description: "In-memory data store, caching, pub/sub." },
+  { slug: "valkey", name: "Valkey", category: "database", featured: false, description: "Redis fork — open-source in-memory data store." },
+  { slug: "mysql", name: "MySQL", category: "database", featured: false, description: "Relational database, widely used in web apps." },
   // ── Databases (non-featured) ──
   { slug: "mongodb", name: "MongoDB", category: "database", featured: false, description: "Document database for flexible schemas." },
   { slug: "planetscale", name: "PlanetScale", category: "database", featured: false, description: "Serverless MySQL with branching." },
@@ -151,10 +151,8 @@ export const TECHNOLOGIES: Technology[] = [
   // ── ML / Data Science ──
   { slug: "pytorch", name: "PyTorch", category: "ml", featured: true, description: "Deep learning framework for research and production." },
   { slug: "xgboost", name: "XGBoost", category: "ml", featured: false, description: "Gradient boosting for tabular data." },
-  { slug: "scikit-learn", name: "scikit-learn", category: "ml", featured: false, description: "Classical ML algorithms and preprocessing." },
   { slug: "pandas", name: "pandas", category: "ml", featured: false, description: "Data manipulation and analysis." },
   { slug: "numpy", name: "NumPy", category: "ml", featured: false, description: "Numerical computing and array operations." },
-  { slug: "jupyter", name: "Jupyter", category: "ml", featured: false, description: "Interactive notebooks for data exploration." },
   { slug: "workers-ai", name: "Workers AI", category: "ml", featured: false, description: "Cloudflare's inference API — embeddings, LLMs." },
   { slug: "openai", name: "OpenAI API", category: "ml", featured: false, description: "GPT, embeddings, and AI integrations." },
 
@@ -183,13 +181,9 @@ export const TECHNOLOGIES: Technology[] = [
   // ── Operating Systems ──
   { slug: "macos", name: "macOS", category: "platform", featured: false, description: "Primary development machine." },
   { slug: "linux", name: "Linux", category: "platform", featured: false, description: "Server OS — Ubuntu, Debian, Arch, Fedora." },
-  { slug: "nixos", name: "NixOS", category: "platform", featured: false, description: "Declarative Linux distro with reproducible builds." },
-
-  // ── Minecraft / Game Dev ──
-  { slug: "spigot", name: "Spigot", category: "gamedev", featured: false, description: "Minecraft server API for Java plugins." },
-  { slug: "paper", name: "Paper", category: "gamedev", featured: false, description: "High-performance Minecraft server fork." },
-  { slug: "minestom", name: "Minestom", category: "gamedev", featured: false, description: "Lightweight Minecraft server library." },
-  { slug: "velocity", name: "Velocity", category: "gamedev", featured: false, description: "Modern Minecraft proxy server." },
+  // ── AI Tools ──
+  { slug: "claude-code", name: "Claude Code", category: "tool", featured: false, description: "AI-powered coding assistant and CLI." },
+  { slug: "codex", name: "Codex", category: "tool", featured: false, description: "OpenAI code generation model." },
 ];
 
 // Category display labels
@@ -202,5 +196,4 @@ export const CATEGORY_LABELS: Record<TechCategory, string> = {
   infra: "Infrastructure",
   ml: "ML & Data",
   mobile: "Mobile",
-  gamedev: "Game Dev",
 };
