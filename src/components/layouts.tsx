@@ -16,14 +16,14 @@ const Head: FC<{
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
-    <link rel="icon" href={FAVICON_SVG} />
+    {raw(`<link rel="icon" href="${FAVICON_SVG}" />`)}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link
       rel="preconnect"
       href="https://fonts.gstatic.com"
       crossorigin="anonymous"
     />
-    <link href={FONT_URL} rel="stylesheet" />
+    {raw(`<link href="${FONT_URL}" rel="stylesheet" />`)}
     <title>{title} — dawson.gg</title>
     <style>{SHARED_CSS + css}</style>
   </head>
