@@ -177,6 +177,21 @@
     return best;
   }
 
+  // Jitter radius (degrees) per country — larger countries get more spread
+  var JITTER: Record<string, number> = {
+    US: 8, CA: 7, RU: 12, CN: 8, AU: 7, BR: 7, IN: 5,
+    MX: 4, AR: 5, DE: 2, FR: 2.5, GB: 1.5, JP: 2,
+    ID: 4, SE: 3, NO: 3, FI: 3, PL: 2, ES: 2, IT: 2,
+  };
+  var DEFAULT_JITTER = 1.5;
+
+  /** Random offset within a circle of given radius */
+  function jitter(lat: number, lng: number, radius: number): [number, number] {
+    var angle = Math.random() * Math.PI * 2;
+    var r = Math.sqrt(Math.random()) * radius; // sqrt for uniform distribution within circle
+    return [lat + r * Math.sin(angle), lng + r * Math.cos(angle)];
+  }
+
   var arcIdCounter = 0;
 
   function makeArc(
@@ -195,61 +210,55 @@
     };
   }
 
-  function buildArcPool(data: TrafficData): Arc[] {
-    var arcs: Arc[] = [];
+  interface ArcSource {
+    code: string;
+    lat: number;
+    lng: number;
+    weight: number;
+    originLat: number;
+    originLng: number;
+  }
+
+  function buildArcSources(data: TrafficData): ArcSource[] {
+    var sources: ArcSource[] = [];
     var maxCountry = data.topCountries[0]?.requests ?? 1;
 
     for (var i = 0; i < data.topCountries.length; i++) {
       var country = data.topCountries[i]!;
       var weight = country.requests / maxCountry;
-
       var origin = nearestOrigin(country.lat, country.lng);
-      arcs.push(makeArc(
-        country.lat, country.lng,
-        origin.lat, origin.lng,
-        weight,
-      ));
-
-      if (data.edgeColos.length > 0) {
-        var nearest = data.edgeColos[0]!;
-        var bestDist = Infinity;
-        for (var j = 0; j < Math.min(data.edgeColos.length, 15); j++) {
-          var c = data.edgeColos[j]!;
-          var dlat = c.lat - country.lat;
-          var dlng = c.lng - country.lng;
-          var dist = dlat * dlat + dlng * dlng;
-          if (dist < bestDist) {
-            bestDist = dist;
-            nearest = c;
-          }
-        }
-        arcs.push(makeArc(
-          country.lat, country.lng,
-          nearest.lat, nearest.lng,
-          weight * 0.7,
-        ));
-      }
+      sources.push({
+        code: country.code,
+        lat: country.lat,
+        lng: country.lng,
+        weight: weight,
+        originLat: origin.lat,
+        originLng: origin.lng,
+      });
     }
-    return arcs;
+    return sources;
   }
 
-  /** Pick one random arc from pool, weighted by traffic */
-  function pickOne(pool: Arc[]): Arc {
+  /** Pick one random arc from sources, weighted by traffic, with jitter */
+  function pickOne(sources: ArcSource[]): Arc {
     var totalW = 0;
-    for (var i = 0; i < pool.length; i++) {
-      totalW += Math.pow(pool[i]!.weight, 0.4) + 0.1;
+    for (var i = 0; i < sources.length; i++) {
+      totalW += Math.pow(sources[i]!.weight, 0.4) + 0.1;
     }
     var r = Math.random() * totalW;
     var cum = 0;
-    for (var i = 0; i < pool.length; i++) {
-      cum += Math.pow(pool[i]!.weight, 0.4) + 0.1;
+    for (var i = 0; i < sources.length; i++) {
+      cum += Math.pow(sources[i]!.weight, 0.4) + 0.1;
       if (cum >= r) {
-        var src = pool[i]!;
-        return makeArc(src.startLat, src.startLng, src.endLat, src.endLng, src.weight);
+        var src = sources[i]!;
+        var radius = JITTER[src.code] ?? DEFAULT_JITTER;
+        var jittered = jitter(src.lat, src.lng, radius);
+        return makeArc(jittered[0], jittered[1], src.originLat, src.originLng, src.weight);
       }
     }
-    var last = pool[pool.length - 1]!;
-    return makeArc(last.startLat, last.startLng, last.endLat, last.endLng, last.weight);
+    var last = sources[sources.length - 1]!;
+    var jittered = jitter(last.lat, last.lng, JITTER[last.code] ?? DEFAULT_JITTER);
+    return makeArc(jittered[0], jittered[1], last.originLat, last.originLng, last.weight);
   }
 
   async function init() {
@@ -295,7 +304,6 @@
     }
 
     var colors = getColors();
-    var maxColo = data.edgeColos[0]?.requests ?? 1;
     var width = container.clientWidth;
     var height = container.clientHeight || width;
 
@@ -311,7 +319,7 @@
       } catch { /* no land */ }
     }
 
-    // Points: origins + edge colos
+    // Points: origins + all edge colos
     var points: any[] = [];
     for (var i = 0; i < ORIGINS.length; i++) {
       points.push({
@@ -323,7 +331,7 @@
       var c = data.edgeColos[i]!;
       points.push({
         lat: c.lat, lng: c.lng,
-        size: 0.3 + (c.requests / maxColo) * 0.7,
+        size: 0.5,
         color: colors.point, isOrigin: false,
       });
     }
@@ -347,7 +355,7 @@
       .pointsData(points)
       .pointColor(function (d: any) { return d.color; })
       .pointRadius(function (d: any) { return d.isOrigin ? 0.5 : 0.3; })
-      .pointAltitude(function (d: any) { return d.isOrigin ? 0.025 : 0.008 + d.size * 0.012; })
+      .pointAltitude(function (d: any) { return d.isOrigin ? 0.025 : 0.01; })
       .ringsData(ringData)
       .ringColor(function () { return colors.origin; })
       .ringMaxRadius(3)
@@ -358,7 +366,7 @@
       .arcDashGap(0.2)
       .arcDashInitialGap(function (d: any) { return d.dashGap; })
       .arcDashAnimateTime(2500)
-      .arcStroke(function (d: any) { return 0.15 + Math.sqrt(d.weight ?? 0.3) * 0.3; })
+      .arcStroke(0.3)
       .arcsTransitionDuration(0)(container);
 
     // Style globe surface
@@ -381,18 +389,18 @@
 
     // --- Staggered arc cycling ---
     // Start with a full set, then replace ONE arc at a time on a fast interval
-    var arcPool = buildArcPool(data);
+    var arcSources = buildArcSources(data);
     var ARC_COUNT = 18;
     var activeArcs: Arc[] = [];
     for (var i = 0; i < ARC_COUNT; i++) {
-      activeArcs.push(pickOne(arcPool));
+      activeArcs.push(pickOne(arcSources));
     }
     globe.arcsData(activeArcs);
 
     // Replace one arc every 800ms — no visible "reset"
     var replaceIdx = 0;
     setInterval(function () {
-      activeArcs[replaceIdx] = pickOne(arcPool);
+      activeArcs[replaceIdx] = pickOne(arcSources);
       replaceIdx = (replaceIdx + 1) % ARC_COUNT;
       globe.arcsData(activeArcs.slice()); // shallow copy triggers update
     }, 800);
