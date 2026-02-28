@@ -394,16 +394,26 @@ body.portfolio {
   color: var(--accent);
 }
 
+.section-header-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.section-header-row .section-label {
+  margin-bottom: 1.5rem;
+}
+
 .network-cta {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 1.5rem;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   text-decoration: none;
   transition: color 0.15s ease;
+  flex-shrink: 0;
 }
 .network-cta:hover {
   color: var(--accent);
