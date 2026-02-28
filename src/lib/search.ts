@@ -26,10 +26,7 @@ export async function searchNotes(
   }));
 }
 
-export async function buildIndex(
-  env: Bindings,
-  notes: Note[],
-): Promise<{ indexed: number }> {
+export async function buildIndex(env: Bindings, notes: Note[]): Promise<{ indexed: number }> {
   const vectors: VectorizeVector[] = [];
 
   // Index notes

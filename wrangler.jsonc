@@ -3,11 +3,7 @@
 {
   "name": "portfolio",
   "compatibility_date": "2025-02-04",
-  "kv_namespaces": [
-    { "binding": "CACHE", "id": "placeholder" }
-  ],
-  "vectorize": [
-    { "binding": "VECTORIZE", "index_name": "portfolio-search" }
-  ],
-  "ai": { "binding": "AI" }
+  "kv_namespaces": [{ "binding": "CACHE", "id": "placeholder" }],
+  "vectorize": [{ "binding": "VECTORIZE", "index_name": "portfolio-search" }],
+  "ai": { "binding": "AI" },
 }

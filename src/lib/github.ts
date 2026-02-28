@@ -38,21 +38,13 @@ export async function fetchAllNotes(env: Bindings): Promise<Note[]> {
 }
 
 /** Fetch a single note by path */
-export async function fetchNoteByPath(
-  env: Bindings,
-  path: string,
-): Promise<Note | null> {
+export async function fetchNoteByPath(env: Bindings, path: string): Promise<Note | null> {
   return fetchNote(env, path);
 }
 
-async function fetchNotesByPrefix(
-  env: Bindings,
-  prefix: string,
-): Promise<Note[]> {
+async function fetchNotesByPrefix(env: Bindings, prefix: string): Promise<Note[]> {
   const tree = await fetchTree(env);
-  const files = tree.filter(
-    (item) => item.path.startsWith(prefix) && item.path.endsWith(".md"),
-  );
+  const files = tree.filter((item) => item.path.startsWith(prefix) && item.path.endsWith(".md"));
 
   const notes: Note[] = [];
   for (const file of files) {
@@ -79,20 +71,14 @@ async function fetchTree(env: Bindings): Promise<GitHubTreeItem[]> {
   return data.tree.filter((item) => item.type === "blob");
 }
 
-async function fetchNote(
-  env: Bindings,
-  path: string,
-): Promise<Note | null> {
-  const res = await fetch(
-    `https://api.github.com/repos/${env.GITHUB_REPO}/contents/${path}`,
-    {
-      headers: {
-        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-        Accept: "application/vnd.github.v3+json",
-        "User-Agent": "dawson-portfolio",
-      },
+async function fetchNote(env: Bindings, path: string): Promise<Note | null> {
+  const res = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/contents/${path}`, {
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "dawson-portfolio",
     },
-  );
+  });
 
   if (!res.ok) return null;
   const data = (await res.json()) as GitHubContent;
@@ -104,10 +90,7 @@ async function fetchNote(
 
   return {
     path,
-    title:
-      (frontmatter.title as string) ||
-      path.split("/").pop()?.replace(".md", "") ||
-      path,
+    title: (frontmatter.title as string) || path.split("/").pop()?.replace(".md", "") || path,
     content: body,
     frontmatter,
     lastModified: new Date().toISOString(),
@@ -129,7 +112,10 @@ function parseFrontmatter(content: string): {
     const idx = line.indexOf(":");
     if (idx === -1) continue;
     const key = line.slice(0, idx).trim();
-    const value = line.slice(idx + 1).trim().replace(/^["']|["']$/g, "");
+    const value = line
+      .slice(idx + 1)
+      .trim()
+      .replace(/^["']|["']$/g, "");
     frontmatter[key] = value;
   }
 

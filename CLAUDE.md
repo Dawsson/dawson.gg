@@ -53,6 +53,7 @@ src/
 ## Environment
 
 Required bindings (set via Alchemy):
+
 - `AI` — Cloudflare Workers AI
 - `CACHE` — KV namespace
 - `VECTORIZE` — Vectorize index (768 dims, cosine)

@@ -20,11 +20,7 @@ export function createExports(manifest: SSRManifest) {
         return handle(manifest, app, request, env, context);
       },
 
-      async scheduled(
-        _event: ScheduledEvent,
-        env: Bindings,
-        ctx: ExecutionContext,
-      ) {
+      async scheduled(_event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) {
         ctx.waitUntil(refreshContributions(env));
       },
     },

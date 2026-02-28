@@ -17,9 +17,7 @@ async function fetchFromGitHub(): Promise<ContribData> {
   });
   const html = await res.text();
 
-  const totalMatch = html.match(
-    /([\d,]+)\s+contributions?\s+in\s+the\s+last\s+year/i,
-  );
+  const totalMatch = html.match(/([\d,]+)\s+contributions?\s+in\s+the\s+last\s+year/i);
   const total = totalMatch ? parseInt(totalMatch[1]!.replace(/,/g, "")) : 0;
 
   const cells: ContribCell[] = [];
@@ -38,18 +36,14 @@ async function fetchFromGitHub(): Promise<ContribData> {
   return { total, cells };
 }
 
-export async function fetchContributions(
-  env: Bindings,
-): Promise<ContribData> {
+export async function fetchContributions(env: Bindings): Promise<ContribData> {
   const cached = await env.CACHE.get(CACHE_KEY);
   if (cached) return JSON.parse(cached) as ContribData;
   return refreshContributions(env);
 }
 
 /** Force-refresh contributions data into KV cache. Called by cron and as fallback. */
-export async function refreshContributions(
-  env: Bindings,
-): Promise<ContribData> {
+export async function refreshContributions(env: Bindings): Promise<ContribData> {
   const data = await fetchFromGitHub();
   await env.CACHE.put(CACHE_KEY, JSON.stringify(data), {
     expirationTtl: TTL,

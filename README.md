@@ -12,14 +12,14 @@ My personal portfolio and blog, built with [Hono](https://hono.dev) JSX on [Clou
 
 ## Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Runtime | Cloudflare Workers |
-| Framework | Hono (JSX) |
-| Search | Vectorize + Workers AI (bge-base-en-v1.5) |
-| IaC | [Alchemy](https://github.com/sam-goodwin/alchemy) |
-| Styling | CSS variables, no build step |
-| Fonts | Instrument Serif, Plus Jakarta Sans, Caveat |
+| Layer     | Technology                                        |
+| --------- | ------------------------------------------------- |
+| Runtime   | Cloudflare Workers                                |
+| Framework | Hono (JSX)                                        |
+| Search    | Vectorize + Workers AI (bge-base-en-v1.5)         |
+| IaC       | [Alchemy](https://github.com/sam-goodwin/alchemy) |
+| Styling   | CSS variables, no build step                      |
+| Fonts     | Instrument Serif, Plus Jakarta Sans, Caveat       |
 
 ## Development
 

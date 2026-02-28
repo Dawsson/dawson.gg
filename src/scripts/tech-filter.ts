@@ -38,11 +38,14 @@
     }
 
     // Subsequence matching with consecutive bonus
-    var qi = 0, score = 0, consecutive = 0, lastIdx = -2;
+    var qi = 0,
+      score = 0,
+      consecutive = 0,
+      lastIdx = -2;
     for (var ti = 0; ti < t.length && qi < w.length; ti++) {
       if (t[ti] === w[qi]) {
         qi++;
-        consecutive = (ti === lastIdx + 1) ? consecutive + 1 : 1;
+        consecutive = ti === lastIdx + 1 ? consecutive + 1 : 1;
         score += consecutive + (ti === 0 ? 2 : 0);
         lastIdx = ti;
       }
@@ -54,7 +57,12 @@
   }
 
   function computeSearchScore(query: string, fields: { text: string; weight: number }[]) {
-    var words = query.trim().split(/\s+/).filter(function (w) { return w.length > 0; });
+    var words = query
+      .trim()
+      .split(/\s+/)
+      .filter(function (w) {
+        return w.length > 0;
+      });
     if (words.length === 0) return 0;
 
     var totalScore = 0;
@@ -94,7 +102,9 @@
 
   function applyFilter() {
     var t0 = performance.now();
-    var query = ((document.getElementById("tech-filter") as HTMLInputElement).value || "").toLowerCase();
+    var query = (
+      (document.getElementById("tech-filter") as HTMLInputElement).value || ""
+    ).toLowerCase();
     var hasQuery = query.length > 0;
     var visibleCount = 0;
     var items = document.querySelectorAll(".tech-item");
@@ -115,7 +125,7 @@
           { text: slug, weight: 0.8 },
           { text: keywords, weight: 0.7 },
           { text: desc, weight: 0.6 },
-          { text: cat, weight: 0.5 }
+          { text: cat, weight: 0.5 },
         ]);
         scored.push({ el: htmlEl, show: score > 0, score: score });
         return;
@@ -131,9 +141,13 @@
 
     // Sort by relevance when searching
     if (hasQuery) {
-      scored.sort(function (a, b) { return b.score - a.score; });
+      scored.sort(function (a, b) {
+        return b.score - a.score;
+      });
       var grid = document.getElementById("tech-grid")!;
-      scored.forEach(function (s) { grid.appendChild(s.el); });
+      scored.forEach(function (s) {
+        grid.appendChild(s.el);
+      });
     }
 
     // Apply visibility
@@ -146,7 +160,9 @@
     var elapsed = performance.now() - t0;
     document.getElementById("tech-count")!.textContent = visibleCount + " shown";
     document.getElementById("tech-time")!.textContent = hasQuery
-      ? (elapsed < 1 ? "< 1ms" : elapsed.toFixed(1) + "ms")
+      ? elapsed < 1
+        ? "< 1ms"
+        : elapsed.toFixed(1) + "ms"
       : "";
   }
 

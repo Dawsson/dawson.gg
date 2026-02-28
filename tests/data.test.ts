@@ -1,10 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  PROFILE,
-  PROJECTS,
-  TECHNOLOGIES,
-  CATEGORY_LABELS,
-} from "../src/lib/data";
+import { PROFILE, PROJECTS, TECHNOLOGIES, CATEGORY_LABELS } from "../src/lib/data";
 
 describe("data integrity", () => {
   test("profile has required fields", () => {

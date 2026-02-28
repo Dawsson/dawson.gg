@@ -1,10 +1,16 @@
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 :root {
-  --font-display: 'Instrument Serif', Georgia, serif;
-  --font-body: 'Plus Jakarta Sans', -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', SFMono-Regular, Menlo, monospace;
-  --font-hand: 'Caveat', cursive;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-body: "Plus Jakarta Sans", -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", SFMono-Regular, Menlo, monospace;
+  --font-hand: "Caveat", cursive;
 
   --bg: #faf9f7;
   --bg-elevated: #fff;
@@ -71,7 +77,9 @@ body {
   text-decoration: none;
   letter-spacing: -0.01em;
 }
-.nav-home:hover { color: var(--accent); }
+.nav-home:hover {
+  color: var(--accent);
+}
 
 .nav-link {
   font-size: 0.875rem;
@@ -79,7 +87,9 @@ body {
   text-decoration: none;
   transition: color 0.15s ease;
 }
-.nav-link:hover { color: var(--accent); }
+.nav-link:hover {
+  color: var(--accent);
+}
 
 a {
   color: var(--link);
@@ -94,25 +104,55 @@ a:hover {
   color: var(--link-hover);
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: -0.02em;
 }
 
-h1 { font-size: 2rem; line-height: 1.2; margin-bottom: 0.5rem; }
-h2 { font-size: 1.5rem; margin-top: 2.5rem; margin-bottom: 0.75rem; }
-h3 { font-size: 1.2rem; margin-top: 2rem; margin-bottom: 0.5rem; }
+h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin-bottom: 0.5rem;
+}
+h2 {
+  font-size: 1.5rem;
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+h3 {
+  font-size: 1.2rem;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
 
-p { margin-bottom: 1.25rem; }
-p:last-child { margin-bottom: 0; }
+p {
+  margin-bottom: 1.25rem;
+}
+p:last-child {
+  margin-bottom: 0;
+}
 
-ul, ol { padding-left: 1.5rem; margin-bottom: 1.25rem; }
-li { margin-bottom: 0.4rem; }
-li::marker { color: var(--text-faint); }
+ul,
+ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+li {
+  margin-bottom: 0.4rem;
+}
+li::marker {
+  color: var(--text-faint);
+}
 
-strong { font-weight: 600; }
-em { font-style: italic; }
+strong {
+  font-weight: 600;
+}
+em {
+  font-style: italic;
+}
 
 code {
   font-family: var(--font-mono);
@@ -192,7 +232,9 @@ body.portfolio {
   margin-bottom: 1.5rem;
 }
 
-.section { margin-bottom: 4rem; }
+.section {
+  margin-bottom: 4rem;
+}
 
 .section-label {
   font-family: var(--font-display);
@@ -208,8 +250,12 @@ body.portfolio {
   align-items: baseline;
   justify-content: space-between;
 }
-.section-header .section-label { margin-bottom: 1.5rem; }
-.section-header .see-all { margin-top: 0; }
+.section-header .section-label {
+  margin-bottom: 1.5rem;
+}
+.section-header .see-all {
+  margin-top: 0;
+}
 
 .github-header {
   display: flex;
@@ -236,7 +282,9 @@ body.portfolio {
   font-family: var(--font-mono);
   transition: color 0.15s ease;
 }
-.github-profile-link:hover { color: var(--accent); }
+.github-profile-link:hover {
+  color: var(--accent);
+}
 
 .github-graph {
   overflow-x: auto;
@@ -257,7 +305,9 @@ body.portfolio {
   gap: 1rem;
 }
 @media (max-width: 640px) {
-  .projects-grid { grid-template-columns: 1fr; }
+  .projects-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .project-card {
@@ -267,7 +317,9 @@ body.portfolio {
   padding: 1.5rem;
   transition: border-color 0.2s ease;
 }
-.project-card:hover { border-color: var(--accent); }
+.project-card:hover {
+  border-color: var(--accent);
+}
 
 .project-card h3 {
   font-family: var(--font-body);
@@ -300,15 +352,22 @@ body.portfolio {
   font-weight: 500;
 }
 
-.project-links { display: flex; gap: 1rem; }
+.project-links {
+  display: flex;
+  gap: 1rem;
+}
 .project-links a {
   font-size: 0.75rem;
   color: var(--text-secondary);
   text-decoration: none;
 }
-.project-links a:hover { color: var(--accent); }
+.project-links a:hover {
+  color: var(--accent);
+}
 
-.tech-controls { margin-bottom: 1rem; }
+.tech-controls {
+  margin-bottom: 1rem;
+}
 
 .tech-filter-input {
   padding: 0.5rem 0.75rem;
@@ -323,8 +382,12 @@ body.portfolio {
   flex: 1;
   max-width: 300px;
 }
-.tech-filter-input:focus { border-color: var(--accent); }
-.tech-filter-input::placeholder { color: var(--text-faint); }
+.tech-filter-input:focus {
+  border-color: var(--accent);
+}
+.tech-filter-input::placeholder {
+  color: var(--text-faint);
+}
 
 .cat-buttons {
   display: flex;
@@ -379,7 +442,9 @@ body.portfolio {
   transition: border-color 0.15s ease;
   overflow: hidden;
 }
-.tech-item:hover { border-color: var(--accent); }
+.tech-item:hover {
+  border-color: var(--accent);
+}
 
 .tech-name {
   font-weight: 600;
@@ -429,16 +494,23 @@ body.portfolio {
   border-radius: 10px;
   text-decoration: none;
   color: var(--text);
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
   margin-bottom: 0.625rem;
 }
-.post-card:last-child { margin-bottom: 0; }
+.post-card:last-child {
+  margin-bottom: 0;
+}
 .post-card:hover {
   border-color: var(--accent);
   background: var(--bg-card);
 }
 
-.post-card-content { flex: 1; min-width: 0; }
+.post-card-content {
+  flex: 1;
+  min-width: 0;
+}
 
 .post-card-title {
   font-family: var(--font-body);
@@ -470,7 +542,9 @@ body.portfolio {
 .post-card-arrow {
   font-size: 1rem;
   color: var(--text-faint);
-  transition: color 0.15s ease, transform 0.15s ease;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
   flex-shrink: 0;
 }
 .post-card:hover .post-card-arrow {
@@ -485,7 +559,9 @@ body.portfolio {
   color: var(--text-secondary);
   text-decoration: none;
 }
-.see-all:hover { color: var(--accent); }
+.see-all:hover {
+  color: var(--accent);
+}
 
 .site-footer {
   margin-top: 6rem;
@@ -542,7 +618,9 @@ body.portfolio {
   text-decoration: none;
   transition: color 0.15s ease;
 }
-.footer-link:hover { color: var(--accent); }
+.footer-link:hover {
+  color: var(--accent);
+}
 
 @media (max-width: 640px) {
   .footer-grid {
@@ -560,7 +638,9 @@ body.portfolio {
   font-size: 3rem;
   margin-bottom: 0.5rem;
 }
-.error-page p { color: var(--text-secondary); }
+.error-page p {
+  color: var(--text-secondary);
+}
 
 /* ─── Blog layout ─── */
 
@@ -570,10 +650,16 @@ body.blog {
   padding: 2.5rem 1.5rem 4rem;
 }
 
-article { margin-top: 0; }
+article {
+  margin-top: 0;
+}
 
-.note-header { margin-bottom: 2rem; }
-.note-header h1 { margin-bottom: 0.5rem; }
+.note-header {
+  margin-bottom: 2rem;
+}
+.note-header h1 {
+  margin-bottom: 0.5rem;
+}
 .note-header time {
   display: block;
   font-size: 0.8125rem;
@@ -581,7 +667,9 @@ article { margin-top: 0; }
   font-variant-numeric: tabular-nums;
 }
 
-.home-header { margin-bottom: 2.5rem; }
+.home-header {
+  margin-bottom: 2.5rem;
+}
 .home-header h1 {
   font-size: 2.25rem;
   font-style: italic;
@@ -597,7 +685,9 @@ article { margin-top: 0; }
   list-style: none;
   padding-left: 0;
 }
-.note-list li { margin-bottom: 0; }
+.note-list li {
+  margin-bottom: 0;
+}
 .note-list a {
   display: block;
   padding: 0.75rem 0;
@@ -606,5 +696,9 @@ article { margin-top: 0; }
   color: var(--text);
   transition: color 0.15s ease;
 }
-.note-list li:first-child a { border-top: 1px solid var(--border); }
-.note-list a:hover { color: var(--accent); }
+.note-list li:first-child a {
+  border-top: 1px solid var(--border);
+}
+.note-list a:hover {
+  color: var(--accent);
+}

@@ -9,7 +9,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const { path } = await request.json() as { path: string };
+  const { path } = (await request.json()) as { path: string };
   if (!path) return Response.json({ error: "path required" }, { status: 400 });
 
   const note = await fetchNoteByPath(env, path);
