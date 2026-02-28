@@ -1,44 +1,60 @@
 ---
-import PortfolioLayout from "@/layouts/portfolio.astro";
-import Nav from "@/components/nav.astro";
-import Footer from "@/components/footer.astro";
+import "@/styles/fonts.css";
+import "@/styles/global.css";
 ---
 
-<PortfolioLayout title="Network — Global Traffic">
-  <Nav />
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Real-time HTTP traffic across Dawson's infrastructure" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <title>Live Requests — dawson.gg</title>
+  </head>
+  <body class="network-page">
+    <div class="network-layout">
+      <aside class="network-sidebar">
+        <a href="/" class="network-back">&larr; dawson.gg</a>
 
-  <div class="network-hero">
-    <h1 class="section-label">Network</h1>
-    <p class="network-subtitle">
-      Real HTTP traffic flowing from users worldwide to Cloudflare's edge — aggregated across all my projects over the last 24 hours.
-    </p>
-  </div>
+        <div class="network-sidebar-content">
+          <div class="network-header">
+            <h1 class="network-title">Live Requests</h1>
+            <span class="network-realtime" title="Data refreshes every 10 minutes">
+              <span class="network-pulse"></span>
+              Real-time
+            </span>
+          </div>
 
-  <div class="network-stats">
-    <div class="network-stat-card">
-      <span class="network-stat-value" id="net-total">—</span>
-      <span class="network-stat-label">Requests (24h)</span>
-    </div>
-    <div class="network-stat-card">
-      <span class="network-stat-value" id="net-countries">—</span>
-      <span class="network-stat-label">Countries</span>
-    </div>
-    <div class="network-stat-card">
-      <span class="network-stat-value" id="net-edges">—</span>
-      <span class="network-stat-label">Edge Locations</span>
-    </div>
-    <div class="network-stat-card">
-      <span class="network-stat-value" id="net-updated">—</span>
-      <span class="network-stat-label">Last Updated</span>
-    </div>
-  </div>
+          <div class="network-stats-group">
+            <div class="network-stat">
+              <span class="network-stat-value" id="net-total">—</span>
+              <span class="network-stat-label">Requests (24h)</span>
+            </div>
+            <div class="network-stat">
+              <span class="network-stat-value" id="net-rps">—</span>
+              <span class="network-stat-label">Requests / sec</span>
+            </div>
+            <div class="network-stat">
+              <span class="network-stat-value" id="net-countries">—</span>
+              <span class="network-stat-label">Countries</span>
+            </div>
+          </div>
 
-  <div class="globe-wrap">
-    <div id="globe-container"></div>
-    <p id="globe-message" class="globe-message">Loading globe…</p>
-  </div>
+          <div class="network-countries" id="net-country-list">
+            <h2 class="network-countries-title">Traffic by Country</h2>
+            <div class="network-countries-list"></div>
+          </div>
+        </div>
+      </aside>
 
-  <Footer />
-</PortfolioLayout>
+      <div class="network-globe">
+        <div id="globe-container"></div>
+        <p id="globe-message" class="globe-message">Loading globe…</p>
+      </div>
+    </div>
+  </body>
+</html>
 
 <script src="@/scripts/globe.ts"></script>

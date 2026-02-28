@@ -35,13 +35,31 @@
 
   // Dedicated origin servers
   var ORIGINS = [
-    { lat: 45.31, lng: -73.87, label: "OVH BHS (WIP)" },          // Beauharnois, QC — OVH
-    { lat: 60.17, lng: 24.94, label: "Hetzner HEL (Flyte)" },     // Helsinki — Hetzner
-    { lat: 34.05, lng: -118.24, label: "Vercel US (Carbon)" },     // Vercel US edge
+    { lat: 45.31, lng: -73.87, label: "OVH BHS" },
+    { lat: 60.17, lng: 24.94, label: "Hetzner HEL" },
+    { lat: 34.05, lng: -118.24, label: "Vercel US" },
   ];
 
   var TOPO_URL =
     "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+
+  // Country code → display name
+  var COUNTRY_NAMES: Record<string, string> = {
+    US: "United States", CA: "Canada", MX: "Mexico", BR: "Brazil",
+    AR: "Argentina", CL: "Chile", CO: "Colombia", PE: "Peru",
+    GB: "United Kingdom", DE: "Germany", FR: "France", NL: "Netherlands",
+    ES: "Spain", IT: "Italy", SE: "Sweden", NO: "Norway",
+    FI: "Finland", DK: "Denmark", PL: "Poland", AT: "Austria",
+    CH: "Switzerland", BE: "Belgium", PT: "Portugal", IE: "Ireland",
+    CZ: "Czechia", RO: "Romania", HU: "Hungary", GR: "Greece",
+    UA: "Ukraine", RU: "Russia", TR: "Turkey", JP: "Japan",
+    KR: "South Korea", CN: "China", IN: "India", ID: "Indonesia",
+    TH: "Thailand", VN: "Vietnam", PH: "Philippines", MY: "Malaysia",
+    SG: "Singapore", TW: "Taiwan", HK: "Hong Kong", AU: "Australia",
+    NZ: "New Zealand", ZA: "South Africa", NG: "Nigeria", KE: "Kenya",
+    EG: "Egypt", AE: "UAE", SA: "Saudi Arabia", IL: "Israel",
+    PK: "Pakistan", BD: "Bangladesh",
+  };
 
   var isDark =
     window.matchMedia &&
@@ -49,19 +67,13 @@
 
   function getColors() {
     return {
-      // Ocean / globe surface
       globe: isDark ? "#0f172a" : "#dbeafe",
-      // Land
       land: isDark ? "#1e293b" : "#bbf7d0",
       landStroke: isDark ? "#334155" : "#86efac",
-      // Atmosphere glow
       atmosphere: isDark ? "#3b82f6" : "#2563eb",
-      // Arcs (traffic lines)
       arc: isDark ? "#fb923c" : "#c2410c",
       arcAlt: isDark ? "#fde68a" : "#ea580c",
-      // Edge colo points
       point: isDark ? "#fb923c" : "#c2410c",
-      // Origin servers
       origin: isDark ? "#22d3ee" : "#0891b2",
     };
   }
@@ -85,23 +97,32 @@
     var el = document.getElementById("net-total");
     if (el) el.textContent = formatNumber(data.totalRequests);
 
+    el = document.getElementById("net-rps");
+    if (el) {
+      var rps = data.totalRequests / (data.windowHours * 3600);
+      el.textContent = rps < 1 ? rps.toFixed(2) : Math.round(rps).toLocaleString();
+    }
+
     el = document.getElementById("net-countries");
     if (el) el.textContent = data.topCountries.length.toString();
 
-    el = document.getElementById("net-edges");
-    if (el) el.textContent = data.edgeColos.length.toString();
-
-    el = document.getElementById("net-updated");
-    if (el) {
-      var d = new Date(data.updatedAt);
-      el.textContent = d.toLocaleTimeString(undefined, {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+    // Populate country list
+    var listEl = document.querySelector(".network-countries-list");
+    if (listEl) {
+      var html = "";
+      for (var i = 0; i < data.topCountries.length; i++) {
+        var c = data.topCountries[i]!;
+        var name = COUNTRY_NAMES[c.code] || c.code;
+        html +=
+          '<div class="network-country-row">' +
+          '<span class="network-country-name">' + name + "</span>" +
+          '<span class="network-country-count">' + formatNumber(c.requests) + "</span>" +
+          "</div>";
+      }
+      listEl.innerHTML = html;
     }
   }
 
-  /** Find the nearest origin server to a country */
   function nearestOrigin(lat: number, lng: number) {
     var best = ORIGINS[0]!;
     var bestDist = Infinity;
@@ -132,7 +153,7 @@
       endLat: elat,
       endLng: elng,
       weight: weight,
-      dashGap: Math.random() * 2, // stagger start position
+      dashGap: Math.random() * 2,
     };
   }
 
@@ -144,7 +165,6 @@
       var country = data.topCountries[i]!;
       var weight = country.requests / maxCountry;
 
-      // Arc from country → nearest origin server
       var origin = nearestOrigin(country.lat, country.lng);
       arcs.push(makeArc(
         country.lat, country.lng,
@@ -152,7 +172,6 @@
         weight,
       ));
 
-      // Also arc to nearest Cloudflare edge colo
       if (data.edgeColos.length > 0) {
         var nearest = data.edgeColos[0]!;
         var bestDist = Infinity;
@@ -176,41 +195,23 @@
     return arcs;
   }
 
-  function pickActiveArcs(pool: Arc[], count: number): Arc[] {
-    if (pool.length <= count) {
-      // Return fresh copies with new IDs so globe.gl treats them as new objects
-      return pool.map(function (a) {
-        return makeArc(a.startLat, a.startLng, a.endLat, a.endLng, a.weight);
-      });
+  /** Pick one random arc from pool, weighted by traffic */
+  function pickOne(pool: Arc[]): Arc {
+    var totalW = 0;
+    for (var i = 0; i < pool.length; i++) {
+      totalW += Math.pow(pool[i]!.weight, 0.4) + 0.1;
     }
-
-    var indices = pool.map(function (_, i) {
-      return i;
-    });
-    var selected: Arc[] = [];
-
-    for (var i = 0; i < count; i++) {
-      var weights = indices.map(function (idx) {
-        return Math.pow(pool[idx]!.weight, 0.4) + 0.1;
-      });
-      var totalW = weights.reduce(function (s, w) {
-        return s + w;
-      }, 0);
-      var r = Math.random() * totalW;
-      var cum = 0;
-      var pick = 0;
-      for (var j = 0; j < weights.length; j++) {
-        cum += weights[j]!;
-        if (cum >= r) {
-          pick = j;
-          break;
-        }
+    var r = Math.random() * totalW;
+    var cum = 0;
+    for (var i = 0; i < pool.length; i++) {
+      cum += Math.pow(pool[i]!.weight, 0.4) + 0.1;
+      if (cum >= r) {
+        var src = pool[i]!;
+        return makeArc(src.startLat, src.startLng, src.endLat, src.endLng, src.weight);
       }
-      var src = pool[indices[pick]!]!;
-      selected.push(makeArc(src.startLat, src.startLng, src.endLat, src.endLng, src.weight));
-      indices.splice(pick, 1);
     }
-    return selected;
+    var last = pool[pool.length - 1]!;
+    return makeArc(last.startLat, last.startLng, last.endLat, last.endLng, last.weight);
   }
 
   async function init() {
@@ -219,22 +220,13 @@
 
     var msgEl = document.getElementById("globe-message");
 
-    // Fetch traffic data and world topology in parallel
     var dataPromise = fetch("/api/network")
-      .then(function (r) {
-        return r.ok ? r.json() : null;
-      })
-      .catch(function () {
-        return null;
-      });
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
 
     var topoPromise = fetch(TOPO_URL)
-      .then(function (r) {
-        return r.ok ? r.json() : null;
-      })
-      .catch(function () {
-        return null;
-      });
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
 
     var [rawData, topology] = await Promise.all([dataPromise, topoPromise]);
     var data = rawData as TrafficData | null;
@@ -247,15 +239,12 @@
     populateStats(data);
     if (msgEl) msgEl.style.display = "none";
 
-    // Dynamically import globe.gl + topojson
     var Globe: any;
     var topojson: any;
     try {
       var [globeMod, topoMod] = await Promise.all([
         import("globe.gl"),
-        import("topojson-client" as any).catch(function () {
-          return null;
-        }),
+        import("topojson-client" as any).catch(function () { return null; }),
       ]);
       Globe = globeMod.default;
       topojson = topoMod;
@@ -270,9 +259,9 @@
     var colors = getColors();
     var maxColo = data.edgeColos[0]?.requests ?? 1;
     var width = container.clientWidth;
-    var height = width;
+    var height = container.clientHeight || width;
 
-    // Parse land polygons from TopoJSON
+    // Parse land polygons
     var landFeatures: any[] = [];
     if (topology && topojson) {
       try {
@@ -281,38 +270,26 @@
           topology.objects.countries || topology.objects.land,
         );
         landFeatures = countries.features || [countries];
-      } catch {
-        // No land rendering
-      }
+      } catch { /* no land */ }
     }
 
-    // Build points: origin servers + edge colos
+    // Points: origins + edge colos
     var points: any[] = [];
-
-    // Origin servers (cyan, larger, pulsing)
     for (var i = 0; i < ORIGINS.length; i++) {
       points.push({
-        lat: ORIGINS[i]!.lat,
-        lng: ORIGINS[i]!.lng,
-        size: 1.0,
-        color: colors.origin,
-        isOrigin: true,
+        lat: ORIGINS[i]!.lat, lng: ORIGINS[i]!.lng,
+        size: 1.0, color: colors.origin, isOrigin: true,
       });
     }
-
-    // Edge colos (accent, sized by traffic)
     for (var i = 0; i < data.edgeColos.length; i++) {
       var c = data.edgeColos[i]!;
       points.push({
-        lat: c.lat,
-        lng: c.lng,
+        lat: c.lat, lng: c.lng,
         size: 0.3 + (c.requests / maxColo) * 0.7,
-        color: colors.point,
-        isOrigin: false,
+        color: colors.point, isOrigin: false,
       });
     }
 
-    // Ring markers for origin servers (separate layer using htmlElements)
     var ringData = ORIGINS.map(function (o) {
       return { lat: o.lat, lng: o.lng };
     });
@@ -324,53 +301,29 @@
       .showAtmosphere(true)
       .atmosphereColor(colors.atmosphere)
       .atmosphereAltitude(0.15)
-      // Land polygons
       .polygonsData(landFeatures)
-      .polygonCapColor(function () {
-        return colors.land;
-      })
-      .polygonSideColor(function () {
-        return "rgba(0,0,0,0)";
-      })
-      .polygonStrokeColor(function () {
-        return colors.landStroke;
-      })
+      .polygonCapColor(function () { return colors.land; })
+      .polygonSideColor(function () { return "rgba(0,0,0,0)"; })
+      .polygonStrokeColor(function () { return colors.landStroke; })
       .polygonAltitude(0.006)
-      // Points (edge colos + origins)
       .pointsData(points)
-      .pointColor(function (d: any) {
-        return d.color;
-      })
-      .pointRadius(function (d: any) {
-        return d.isOrigin ? 0.5 : 0.3;
-      })
-      .pointAltitude(function (d: any) {
-        return d.isOrigin ? 0.025 : 0.008 + d.size * 0.012;
-      })
-      // Rings around origin servers
+      .pointColor(function (d: any) { return d.color; })
+      .pointRadius(function (d: any) { return d.isOrigin ? 0.5 : 0.3; })
+      .pointAltitude(function (d: any) { return d.isOrigin ? 0.025 : 0.008 + d.size * 0.012; })
       .ringsData(ringData)
-      .ringColor(function () {
-        return colors.origin;
-      })
+      .ringColor(function () { return colors.origin; })
       .ringMaxRadius(3)
       .ringPropagationSpeed(1.5)
       .ringRepeatPeriod(1200)
-      // Arcs
-      .arcColor(function () {
-        return [colors.arc, colors.arcAlt];
-      })
+      .arcColor(function () { return [colors.arc, colors.arcAlt]; })
       .arcDashLength(0.4)
       .arcDashGap(0.2)
-      .arcDashInitialGap(function (d: any) {
-        return d.dashGap;
-      })
+      .arcDashInitialGap(function (d: any) { return d.dashGap; })
       .arcDashAnimateTime(2500)
-      .arcStroke(function (d: any) {
-        return 0.15 + (d.weight ?? 0.3) * 0.45;
-      })
+      .arcStroke(function (d: any) { return 0.15 + (d.weight ?? 0.3) * 0.45; })
       .arcsTransitionDuration(0)(container);
 
-    // Style globe surface (ocean color)
+    // Style globe surface
     var globeMat = globe.globeMaterial();
     if (globeMat) {
       var rgb = hexToRgb(colors.globe);
@@ -379,7 +332,6 @@
       globeMat.emissiveIntensity = 0.05;
     }
 
-    // Controls
     var controls = globe.controls();
     if (controls) {
       controls.autoRotate = true;
@@ -387,52 +339,48 @@
       controls.enableZoom = false;
     }
 
-    // Initial POV — Atlantic view showing US, Europe, Africa
     globe.pointOfView({ lat: 25, lng: -40, altitude: 2.0 });
 
-    // Arc cycling — gradual turnover
+    // --- Staggered arc cycling ---
+    // Start with a full set, then replace ONE arc at a time on a fast interval
     var arcPool = buildArcPool(data);
-    var activeArcs = pickActiveArcs(arcPool, 15);
+    var ARC_COUNT = 18;
+    var activeArcs: Arc[] = [];
+    for (var i = 0; i < ARC_COUNT; i++) {
+      activeArcs.push(pickOne(arcPool));
+    }
     globe.arcsData(activeArcs);
 
+    // Replace one arc every 800ms — no visible "reset"
+    var replaceIdx = 0;
     setInterval(function () {
-      // Full swap with fresh arc objects (new IDs + random dashGap offsets)
-      activeArcs = pickActiveArcs(arcPool, 15);
-      globe.arcsData(activeArcs);
-    }, 5000);
+      activeArcs[replaceIdx] = pickOne(arcPool);
+      replaceIdx = (replaceIdx + 1) % ARC_COUNT;
+      globe.arcsData(activeArcs.slice()); // shallow copy triggers update
+    }, 800);
 
-    // Resize
-    window.addEventListener("resize", function () {
+    // Resize — fill entire container
+    function onResize() {
       var w = container!.clientWidth;
-      globe.width(w).height(w);
-    });
+      var h = container!.clientHeight || w;
+      globe.width(w).height(h);
+    }
+    window.addEventListener("resize", onResize);
 
-    // Theme change
+    // Theme
     window
       .matchMedia("(prefers-color-scheme: dark)")
       .addEventListener("change", function (e) {
         isDark = e.matches;
         var c = getColors();
-
         globe
           .atmosphereColor(c.atmosphere)
-          .pointColor(function (d: any) {
-            return d.isOrigin ? c.origin : c.point;
-          })
-          .arcColor(function () {
-            return [c.arc, c.arcAlt];
-          })
-          .polygonCapColor(function () {
-            return c.land;
-          })
-          .polygonStrokeColor(function () {
-            return c.landStroke;
-          })
-          .ringColor(function () {
-            return c.origin;
-          });
+          .pointColor(function (d: any) { return d.isOrigin ? c.origin : c.point; })
+          .arcColor(function () { return [c.arc, c.arcAlt]; })
+          .polygonCapColor(function () { return c.land; })
+          .polygonStrokeColor(function () { return c.landStroke; })
+          .ringColor(function () { return c.origin; });
 
-        // Update point colors
         for (var j = 0; j < points.length; j++) {
           points[j].color = points[j].isOrigin ? c.origin : c.point;
         }
