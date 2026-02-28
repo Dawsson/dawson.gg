@@ -8,7 +8,7 @@ const featured = PROJECTS.filter((p) => p.featured);
   <h2 class="section-label">Projects</h2>
   <div class="projects-grid">
     {featured.map((p) => (
-      <div class="project-card">
+      <div class="project-card project-card--wip">
         <h3>{p.title}</h3>
         <p>{p.description}</p>
         <div class="project-tech">
@@ -22,6 +22,9 @@ const featured = PROJECTS.filter((p) => p.featured);
             {p.github && <a href={p.github} target="_blank" rel="noopener">GitHub</a>}
           </div>
         )}
+        <div class="project-wip-overlay">
+          <span>Coming soon</span>
+        </div>
       </div>
     ))}
   </div>
