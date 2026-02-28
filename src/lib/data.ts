@@ -38,7 +38,7 @@ export const PROFILE: Profile = {
   name: "Dawson",
   title: "Full Stack Developer",
   intro:
-    "<strong>Full stack</strong> developer building products end-to-end. Mobile apps, cloud infrastructure, and everything in between. I ship fast and care about tools that get out of the way.",
+    "<strong>Full stack</strong> developer building products <strong>end-to-end</strong>. Mobile apps, cloud infrastructure, and everything in between. I <strong>ship fast</strong> and care about tools that get out of the way.",
   links: [
     { label: "GitHub", url: "https://github.com/Dawsson" },
     { label: "X", url: "https://x.com/DawssonMonroe" },
