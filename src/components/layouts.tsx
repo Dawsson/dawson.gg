@@ -25,7 +25,7 @@ const Head: FC<{
     />
     {raw(`<link href="${FONT_URL}" rel="stylesheet" />`)}
     <title>{title} — dawson.gg</title>
-    <style>{SHARED_CSS + css}</style>
+    {raw(`<style>${SHARED_CSS + css}</style>`)}
   </head>
 );
 
