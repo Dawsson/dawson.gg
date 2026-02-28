@@ -22,7 +22,9 @@
     "astro": "^5.18.0",
     "globe.gl": "^2.45.0",
     "marked": "^17.0.3",
-    "three": "^0.183.1"
+    "three": "^0.183.1",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
