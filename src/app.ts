@@ -461,7 +461,7 @@ function technologiesSection(): string {
         var params = new URLSearchParams();
         var q = document.getElementById('tech-filter').value || '';
         if (q) params.set('q', q);
-        if (activeCat !== 'featured') params.set('cat', activeCat);
+        if (activeCat !== 'featured') params.set('category', activeCat);
         var str = params.toString();
         var url = window.location.pathname + (str ? '?' + str : '');
         history.replaceState(null, '', url);
@@ -548,7 +548,7 @@ function technologiesSection(): string {
       (function() {
         var params = new URLSearchParams(window.location.search);
         var q = params.get('q');
-        var cat = params.get('cat');
+        var cat = params.get('category');
         if (q) document.getElementById('tech-filter').value = q;
         if (cat) {
           activeCat = cat;
