@@ -385,7 +385,6 @@ function technologiesSection(): string {
     )
     .join("");
 
-  const featuredCount = TECHNOLOGIES.filter((t) => t.featured).length;
   const totalCount = TECHNOLOGIES.length;
 
   return `
@@ -394,39 +393,32 @@ function technologiesSection(): string {
       <div class="tech-controls">
         <div class="tech-controls-top">
           <input type="text" id="tech-filter" class="tech-filter-input" placeholder="Search ${totalCount} technologies..." />
-          <button class="tech-toggle" id="tech-toggle" onclick="toggleAll()">Show all ${totalCount}</button>
-          <span class="tech-count" id="tech-count">${featuredCount} featured</span>
+          <span class="tech-count" id="tech-count"></span>
           <span class="tech-time" id="tech-time"></span>
         </div>
         <div class="cat-buttons">
-          <button class="cat-btn active" data-cat="all" onclick="filterCat('all')">All</button>
+          <button class="cat-btn active" data-cat="featured" onclick="filterCat('featured')">Featured</button>
+          <button class="cat-btn" data-cat="all" onclick="filterCat('all')">All ${totalCount}</button>
           ${categoryButtons}
         </div>
       </div>
       <div class="tech-grid" id="tech-grid">${allItems}</div>
     </section>
     <script>
-      var activeCat = 'all';
-      var showAll = false;
+      var activeCat = 'featured';
 
-      // Normalize: strip hyphens/dashes, collapse spaces
-      function norm(s) { return s.replace(/[-_]/g, ' ').replace(/\s+/g, ' '); }
+      function norm(s) { return s.replace(/[-_]/g, ' ').replace(/\\s+/g, ' '); }
 
-      // Fuzzy match a single word against a target string. Returns 0-1.
       function fuzzyWord(word, target) {
         if (!word) return 0;
         var w = norm(word), t = norm(target);
-        // Exact substring = best match
         var idx = t.indexOf(w);
         if (idx !== -1) return 1.0 + (idx === 0 ? 0.2 : 0);
-        // Also check individual words in target for prefix match
         var tWords = t.split(' ');
         for (var i = 0; i < tWords.length; i++) {
           if (tWords[i].indexOf(w) === 0) return 0.95;
         }
-        // For short queries (<=3 chars), require substring match only — no loose fuzzy
         if (w.length <= 3) return 0;
-        // Check stem-like matching: if query without common suffixes matches
         var stems = [w];
         if (w.endsWith('ing')) stems.push(w.slice(0, -3), w.slice(0, -3) + 'e', w.slice(0, -3) + 'ed');
         if (w.endsWith('ed')) stems.push(w.slice(0, -2), w.slice(0, -2) + 'ing');
@@ -434,7 +426,6 @@ function technologiesSection(): string {
         for (var si = 1; si < stems.length; si++) {
           if (stems[si].length >= 3 && t.indexOf(stems[si]) !== -1) return 0.85;
         }
-        // Subsequence match with scoring
         var qi = 0, score = 0, consecutive = 0, lastIdx = -2;
         for (var ti = 0; ti < t.length && qi < w.length; ti++) {
           if (t[ti] === w[qi]) {
@@ -449,9 +440,8 @@ function technologiesSection(): string {
         return (score / (w.length * 4)) * (0.5 + 0.5 * lenPenalty);
       }
 
-      // Multi-word search: all words must match somewhere, scores are combined
       function searchScore(query, fields) {
-        var words = query.trim().split(/\s+/).filter(function(w) { return w.length > 0; });
+        var words = query.trim().split(/\\s+/).filter(function(w) { return w.length > 0; });
         if (words.length === 0) return 0;
         var totalScore = 0;
         for (var wi = 0; wi < words.length; wi++) {
@@ -460,7 +450,7 @@ function technologiesSection(): string {
             var s = fuzzyWord(words[wi], fields[fi].text) * fields[fi].weight;
             if (s > bestWordScore) bestWordScore = s;
           }
-          if (bestWordScore === 0) return 0; // All words must match something
+          if (bestWordScore === 0) return 0;
           totalScore += bestWordScore;
         }
         return totalScore / words.length;
@@ -470,8 +460,7 @@ function technologiesSection(): string {
         var params = new URLSearchParams();
         var q = document.getElementById('tech-filter').value || '';
         if (q) params.set('q', q);
-        if (activeCat !== 'all') params.set('cat', activeCat);
-        if (showAll) params.set('all', '1');
+        if (activeCat !== 'featured') params.set('cat', activeCat);
         var str = params.toString();
         var url = window.location.pathname + (str ? '?' + str : '') + '#technologies';
         history.replaceState(null, '', url);
@@ -482,14 +471,6 @@ function technologiesSection(): string {
         document.querySelectorAll('.cat-btn').forEach(function(b) {
           b.classList.toggle('active', b.getAttribute('data-cat') === cat);
         });
-        applyFilter();
-        syncToUrl();
-      }
-
-      function toggleAll() {
-        showAll = !showAll;
-        var btn = document.getElementById('tech-toggle');
-        btn.textContent = showAll ? 'Show featured' : 'Show all ${totalCount}';
         applyFilter();
         syncToUrl();
       }
@@ -509,22 +490,30 @@ function technologiesSection(): string {
           var slug = el.getAttribute('data-slug') || '';
           var kw = el.getAttribute('data-kw') || '';
           var featured = el.getAttribute('data-featured') === 'true';
-          var matchCat = activeCat === 'all' || cat === activeCat;
 
-          var score = 0;
+          // Search always searches everything
           if (hasQuery) {
-            score = searchScore(q, [
+            var score = searchScore(q, [
               { text: name, weight: 1.0 },
               { text: slug, weight: 0.8 },
               { text: kw, weight: 0.7 },
               { text: desc, weight: 0.6 },
               { text: cat, weight: 0.5 },
             ]);
+            scored.push({ el: el, show: score > 0, score: score });
+            return;
           }
 
-          var matchVisibility = showAll || hasQuery || featured;
-          var show = matchCat && matchVisibility && (!hasQuery || score > 0);
-          scored.push({ el: el, show: show, score: score });
+          // No search — use tab filter
+          var show = false;
+          if (activeCat === 'featured') {
+            show = featured;
+          } else if (activeCat === 'all') {
+            show = true;
+          } else {
+            show = cat === activeCat;
+          }
+          scored.push({ el: el, show: show, score: 0 });
         });
 
         if (hasQuery) {
@@ -549,19 +538,16 @@ function technologiesSection(): string {
         }
       }
 
-      function onInput() {
+      document.getElementById('tech-filter').addEventListener('input', function() {
         applyFilter();
         syncToUrl();
-      }
-
-      document.getElementById('tech-filter').addEventListener('input', onInput);
+      });
 
       // Restore state from URL on load
       (function() {
         var params = new URLSearchParams(window.location.search);
         var q = params.get('q');
         var cat = params.get('cat');
-        var all = params.get('all');
         if (q) document.getElementById('tech-filter').value = q;
         if (cat) {
           activeCat = cat;
@@ -569,11 +555,7 @@ function technologiesSection(): string {
             b.classList.toggle('active', b.getAttribute('data-cat') === cat);
           });
         }
-        if (all === '1') {
-          showAll = true;
-          document.getElementById('tech-toggle').textContent = 'Show featured';
-        }
-        if (q || cat || all) applyFilter();
+        if (q || cat) applyFilter();
       })();
     </script>
   `;
@@ -587,15 +569,19 @@ function recentPostsSection(notes: VaultNote[]): string {
       const date = n.frontmatter.created
         ? formatDate(String(n.frontmatter.created))
         : "";
-      // Get a clean snippet from content — strip markdown headings, links, frontmatter
-      const snippet = n.content
-        .replace(/^#+ .*/gm, "")
-        .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-        .replace(/[*_`~]/g, "")
-        .trim()
-        .slice(0, 140)
-        .trim();
-      const ellipsis = n.content.length > 140 ? "..." : "";
+      // Prefer frontmatter subtitle/description over raw content
+      const subtitle = String(n.frontmatter.subtitle || n.frontmatter.description || "");
+      let snippet = subtitle;
+      if (!snippet) {
+        snippet = n.content
+          .replace(/^#+ .*/gm, "")
+          .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+          .replace(/[*_`~]/g, "")
+          .trim()
+          .slice(0, 140)
+          .trim();
+      }
+      const ellipsis = !subtitle && n.content.length > 140 ? "..." : "";
 
       return `
         <a href="/p/${encodeURIComponent(n.path)}" class="post-card">
@@ -1134,22 +1120,6 @@ function portfolioLayout(title: string, body: string): string {
     .tech-filter-input {
       flex: 1;
       max-width: 300px;
-    }
-
-    .tech-toggle {
-      font-family: var(--font-body);
-      font-size: 0.8125rem;
-      color: var(--text-secondary);
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.4rem 0.875rem;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .tech-toggle:hover {
-      color: var(--accent);
-      border-color: var(--accent);
     }
 
     .tech-count {
