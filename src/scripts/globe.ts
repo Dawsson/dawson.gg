@@ -31,8 +31,12 @@
     weight: number;
   }
 
-  // OVH dedicated server in Beauharnois, Quebec (near Ontario border)
-  var ORIGIN_SERVER = { lat: 45.31, lng: -73.87, label: "Origin (OVH BHS)" };
+  // Dedicated origin servers
+  var ORIGINS = [
+    { lat: 45.31, lng: -73.87, label: "OVH BHS (WIP)" },          // Beauharnois, QC — OVH
+    { lat: 60.17, lng: 24.94, label: "Hetzner HEL (Flyte)" },     // Helsinki — Hetzner
+    { lat: 34.05, lng: -118.24, label: "Vercel US (Carbon)" },     // Vercel US edge
+  ];
 
   var TOPO_URL =
     "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
@@ -43,13 +47,19 @@
 
   function getColors() {
     return {
-      globe: isDark ? "#141211" : "#f5f5f4",
-      atmosphere: isDark ? "#fb923c" : "#c2410c",
-      arc: isDark ? "rgba(251,146,60,0.6)" : "rgba(194,65,12,0.6)",
-      arcAlt: isDark ? "rgba(254,215,170,0.35)" : "rgba(234,88,12,0.35)",
+      // Ocean / globe surface
+      globe: isDark ? "#0f172a" : "#dbeafe",
+      // Land
+      land: isDark ? "#1e293b" : "#bbf7d0",
+      landStroke: isDark ? "#334155" : "#86efac",
+      // Atmosphere glow
+      atmosphere: isDark ? "#3b82f6" : "#2563eb",
+      // Arcs (traffic lines)
+      arc: isDark ? "#fb923c" : "#c2410c",
+      arcAlt: isDark ? "#fde68a" : "#ea580c",
+      // Edge colo points
       point: isDark ? "#fb923c" : "#c2410c",
-      land: isDark ? "#1c1917" : "#e7e5e4",
-      landStroke: isDark ? "#292524" : "#d6d3d1",
+      // Origin servers
       origin: isDark ? "#22d3ee" : "#0891b2",
     };
   }
@@ -89,6 +99,23 @@
     }
   }
 
+  /** Find the nearest origin server to a country */
+  function nearestOrigin(lat: number, lng: number) {
+    var best = ORIGINS[0]!;
+    var bestDist = Infinity;
+    for (var i = 0; i < ORIGINS.length; i++) {
+      var o = ORIGINS[i]!;
+      var dlat = o.lat - lat;
+      var dlng = o.lng - lng;
+      var dist = dlat * dlat + dlng * dlng;
+      if (dist < bestDist) {
+        bestDist = dist;
+        best = o;
+      }
+    }
+    return best;
+  }
+
   function buildArcPool(data: TrafficData): Arc[] {
     var arcs: Arc[] = [];
     var maxCountry = data.topCountries[0]?.requests ?? 1;
@@ -97,16 +124,17 @@
       var country = data.topCountries[i]!;
       var weight = country.requests / maxCountry;
 
-      // Arc from country → origin server
+      // Arc from country → nearest origin server
+      var origin = nearestOrigin(country.lat, country.lng);
       arcs.push({
         startLat: country.lat,
         startLng: country.lng,
-        endLat: ORIGIN_SERVER.lat,
-        endLng: ORIGIN_SERVER.lng,
+        endLat: origin.lat,
+        endLng: origin.lng,
         weight: weight,
       });
 
-      // Also arc to nearest edge colo if different from origin
+      // Also arc to nearest Cloudflare edge colo
       if (data.edgeColos.length > 0) {
         var nearest = data.edgeColos[0]!;
         var bestDist = Infinity;
@@ -125,7 +153,7 @@
           startLng: country.lng,
           endLat: nearest.lat,
           endLng: nearest.lng,
-          weight: weight,
+          weight: weight * 0.7,
         });
       }
     }
@@ -135,14 +163,12 @@
   function pickActiveArcs(pool: Arc[], count: number): Arc[] {
     if (pool.length <= count) return pool.slice();
 
-    // Weighted random without replacement
     var indices = pool.map(function (_, i) {
       return i;
     });
     var selected: Arc[] = [];
 
     for (var i = 0; i < count; i++) {
-      // Weight by sqrt for more even distribution
       var weights = indices.map(function (idx) {
         return Math.pow(pool[idx]!.weight, 0.4) + 0.1;
       });
@@ -172,17 +198,21 @@
     var msgEl = document.getElementById("globe-message");
 
     // Fetch traffic data and world topology in parallel
-    var dataPromise = fetch("/api/network").then(function (r) {
-      return r.ok ? r.json() : null;
-    }).catch(function () {
-      return null;
-    });
+    var dataPromise = fetch("/api/network")
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .catch(function () {
+        return null;
+      });
 
-    var topoPromise = fetch(TOPO_URL).then(function (r) {
-      return r.ok ? r.json() : null;
-    }).catch(function () {
-      return null;
-    });
+    var topoPromise = fetch(TOPO_URL)
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .catch(function () {
+        return null;
+      });
 
     var [rawData, topology] = await Promise.all([dataPromise, topoPromise]);
     var data = rawData as TrafficData | null;
@@ -195,7 +225,7 @@
     populateStats(data);
     if (msgEl) msgEl.style.display = "none";
 
-    // Dynamically import globe.gl
+    // Dynamically import globe.gl + topojson
     var Globe: any;
     var topojson: any;
     try {
@@ -217,11 +247,10 @@
 
     var colors = getColors();
     var maxColo = data.edgeColos[0]?.requests ?? 1;
-
     var width = container.clientWidth;
     var height = width;
 
-    // Build land polygons from topology
+    // Parse land polygons from TopoJSON
     var landFeatures: any[] = [];
     if (topology && topojson) {
       try {
@@ -231,23 +260,25 @@
         );
         landFeatures = countries.features || [countries];
       } catch {
-        // Fallback: no land rendering
+        // No land rendering
       }
     }
 
-    // Build points: edge colos + origin server
+    // Build points: origin servers + edge colos
     var points: any[] = [];
 
-    // Origin server (cyan, larger)
-    points.push({
-      lat: ORIGIN_SERVER.lat,
-      lng: ORIGIN_SERVER.lng,
-      size: 1.0,
-      color: colors.origin,
-      isOrigin: true,
-    });
+    // Origin servers (cyan, larger, pulsing)
+    for (var i = 0; i < ORIGINS.length; i++) {
+      points.push({
+        lat: ORIGINS[i]!.lat,
+        lng: ORIGINS[i]!.lng,
+        size: 1.0,
+        color: colors.origin,
+        isOrigin: true,
+      });
+    }
 
-    // Edge colos (accent color, sized by traffic)
+    // Edge colos (accent, sized by traffic)
     for (var i = 0; i < data.edgeColos.length; i++) {
       var c = data.edgeColos[i]!;
       points.push({
@@ -259,13 +290,18 @@
       });
     }
 
+    // Ring markers for origin servers (separate layer using htmlElements)
+    var ringData = ORIGINS.map(function (o) {
+      return { lat: o.lat, lng: o.lng };
+    });
+
     var globe = Globe()
       .width(width)
       .height(height)
       .backgroundColor("rgba(0,0,0,0)")
       .showAtmosphere(true)
       .atmosphereColor(colors.atmosphere)
-      .atmosphereAltitude(0.12)
+      .atmosphereAltitude(0.15)
       // Land polygons
       .polygonsData(landFeatures)
       .polygonCapColor(function () {
@@ -277,58 +313,66 @@
       .polygonStrokeColor(function () {
         return colors.landStroke;
       })
-      .polygonAltitude(0.005)
-      // Points
+      .polygonAltitude(0.006)
+      // Points (edge colos + origins)
       .pointsData(points)
       .pointColor(function (d: any) {
         return d.color;
       })
       .pointRadius(function (d: any) {
-        return d.isOrigin ? 0.6 : 0.35;
+        return d.isOrigin ? 0.5 : 0.3;
       })
       .pointAltitude(function (d: any) {
-        return d.isOrigin ? 0.03 : 0.01 + d.size * 0.015;
+        return d.isOrigin ? 0.025 : 0.008 + d.size * 0.012;
       })
+      // Rings around origin servers
+      .ringsData(ringData)
+      .ringColor(function () {
+        return colors.origin;
+      })
+      .ringMaxRadius(3)
+      .ringPropagationSpeed(1.5)
+      .ringRepeatPeriod(1200)
       // Arcs
       .arcColor(function () {
         return [colors.arc, colors.arcAlt];
       })
       .arcDashLength(0.5)
-      .arcDashGap(0.3)
-      .arcDashAnimateTime(2000)
+      .arcDashGap(0.25)
+      .arcDashAnimateTime(2200)
       .arcStroke(function (d: any) {
-        return 0.2 + (d.weight ?? 0.3) * 0.5;
+        return 0.15 + (d.weight ?? 0.3) * 0.45;
       })
-      .arcsTransitionDuration(800)(container);
+      .arcsTransitionDuration(1000)(container);
 
-    // Style the globe surface
+    // Style globe surface (ocean color)
     var globeMat = globe.globeMaterial();
     if (globeMat) {
       var rgb = hexToRgb(colors.globe);
       globeMat.color.setRGB(rgb.r, rgb.g, rgb.b);
       globeMat.emissive = globeMat.color.clone();
-      globeMat.emissiveIntensity = 0.08;
+      globeMat.emissiveIntensity = 0.05;
     }
 
     // Controls
     var controls = globe.controls();
     if (controls) {
       controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.4;
+      controls.autoRotateSpeed = 0.35;
       controls.enableZoom = false;
     }
 
-    // Initial POV — centered on Atlantic to show US + Europe
+    // Initial POV — Atlantic view showing US, Europe, Africa
     globe.pointOfView({ lat: 25, lng: -40, altitude: 2.0 });
 
-    // Arc cycling — smooth transition with overlapping sets
+    // Arc cycling — gradual turnover
     var arcPool = buildArcPool(data);
     var activeArcs = pickActiveArcs(arcPool, 15);
     globe.arcsData(activeArcs);
 
     setInterval(function () {
-      // Gradually rotate arcs: keep half, replace half
-      var keep = Math.floor(activeArcs.length / 2);
+      // Keep ~60% of arcs, replace the rest
+      var keep = Math.ceil(activeArcs.length * 0.6);
       var kept = activeArcs.slice(0, keep);
       var fresh = pickActiveArcs(arcPool, activeArcs.length - keep);
       activeArcs = kept.concat(fresh);
@@ -361,11 +405,14 @@
           })
           .polygonStrokeColor(function () {
             return c.landStroke;
+          })
+          .ringColor(function () {
+            return c.origin;
           });
 
-        // Update points data to refresh colors
-        for (var i = 0; i < points.length; i++) {
-          points[i].color = points[i].isOrigin ? c.origin : c.point;
+        // Update point colors
+        for (var j = 0; j < points.length; j++) {
+          points[j].color = points[j].isOrigin ? c.origin : c.point;
         }
         globe.pointsData(points);
 
