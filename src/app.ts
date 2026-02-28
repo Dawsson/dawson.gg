@@ -399,6 +399,7 @@ function technologiesSection(): string {
         <div class="cat-buttons">
           <button class="cat-btn active" data-cat="featured" onclick="filterCat('featured')">Featured</button>
           <button class="cat-btn" data-cat="all" onclick="filterCat('all')">All ${totalCount}</button>
+          <span class="cat-divider"></span>
           ${categoryButtons}
         </div>
       </div>
@@ -462,7 +463,7 @@ function technologiesSection(): string {
         if (q) params.set('q', q);
         if (activeCat !== 'featured') params.set('cat', activeCat);
         var str = params.toString();
-        var url = window.location.pathname + (str ? '?' + str : '') + '#technologies';
+        var url = window.location.pathname + (str ? '?' + str : '');
         history.replaceState(null, '', url);
       }
 
@@ -1050,7 +1051,16 @@ function portfolioLayout(title: string, body: string): string {
     .cat-buttons {
       display: flex;
       flex-wrap: wrap;
+      align-items: center;
       gap: 0.375rem;
+    }
+
+    .cat-divider {
+      width: 1px;
+      height: 1.25rem;
+      background: var(--border);
+      margin: 0 0.25rem;
+      flex-shrink: 0;
     }
 
     .cat-btn {
