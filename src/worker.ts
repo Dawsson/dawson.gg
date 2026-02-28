@@ -22,9 +22,7 @@ export function createExports(manifest: SSRManifest) {
       },
 
       async scheduled(_event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) {
-        ctx.waitUntil(
-          Promise.all([refreshContributions(env), refreshTrafficData(env)]),
-        );
+        ctx.waitUntil(Promise.all([refreshContributions(env), refreshTrafficData(env)]));
       },
     },
   };

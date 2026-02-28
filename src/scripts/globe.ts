@@ -40,56 +40,165 @@
     { lat: 34.05, lng: -118.24, label: "Vercel US" },
   ];
 
-  var TOPO_URL =
-    "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+  var TOPO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
   // Country code → display name
   var COUNTRY_NAMES: Record<string, string> = {
-    US: "United States", CA: "Canada", MX: "Mexico", BR: "Brazil",
-    AR: "Argentina", CL: "Chile", CO: "Colombia", PE: "Peru",
-    VE: "Venezuela", EC: "Ecuador", UY: "Uruguay", PY: "Paraguay",
-    BO: "Bolivia", CR: "Costa Rica", DO: "Dominican Republic",
-    JM: "Jamaica", PR: "Puerto Rico", CU: "Cuba", HN: "Honduras",
-    NI: "Nicaragua", PA: "Panama", GT: "Guatemala", SV: "El Salvador",
-    TT: "Trinidad & Tobago", BZ: "Belize", HT: "Haiti",
-    GB: "United Kingdom", DE: "Germany", FR: "France", NL: "Netherlands",
-    ES: "Spain", IT: "Italy", SE: "Sweden", NO: "Norway",
-    FI: "Finland", DK: "Denmark", PL: "Poland", AT: "Austria",
-    CH: "Switzerland", BE: "Belgium", PT: "Portugal", IE: "Ireland",
-    CZ: "Czechia", RO: "Romania", HU: "Hungary", GR: "Greece",
-    UA: "Ukraine", RU: "Russia", SK: "Slovakia", BG: "Bulgaria",
-    RS: "Serbia", HR: "Croatia", SI: "Slovenia", LT: "Lithuania",
-    LV: "Latvia", EE: "Estonia", BA: "Bosnia", MK: "North Macedonia",
-    AL: "Albania", LU: "Luxembourg", MT: "Malta", CY: "Cyprus",
-    MD: "Moldova", BY: "Belarus", AD: "Andorra", GI: "Gibraltar",
-    TR: "Turkey", AE: "UAE", SA: "Saudi Arabia", IL: "Israel",
-    IR: "Iran", IQ: "Iraq", JO: "Jordan", LB: "Lebanon",
-    QA: "Qatar", KW: "Kuwait", BH: "Bahrain", PS: "Palestine",
-    JP: "Japan", KR: "South Korea", CN: "China", IN: "India",
-    ID: "Indonesia", TH: "Thailand", VN: "Vietnam", PH: "Philippines",
-    MY: "Malaysia", SG: "Singapore", TW: "Taiwan", HK: "Hong Kong",
-    AU: "Australia", NZ: "New Zealand", PK: "Pakistan", BD: "Bangladesh",
-    LK: "Sri Lanka", NP: "Nepal", KH: "Cambodia", KZ: "Kazakhstan",
-    KG: "Kyrgyzstan", UZ: "Uzbekistan", MN: "Mongolia", MV: "Maldives",
-    GE: "Georgia", AZ: "Azerbaijan", MM: "Myanmar", LA: "Laos",
-    ZA: "South Africa", NG: "Nigeria", KE: "Kenya", EG: "Egypt",
-    MA: "Morocco", DZ: "Algeria", TN: "Tunisia", ET: "Ethiopia",
-    UG: "Uganda", GH: "Ghana", TZ: "Tanzania", SN: "Senegal",
-    CM: "Cameroon", CI: "Côte d'Ivoire", MG: "Madagascar",
-    MU: "Mauritius", RW: "Rwanda", ZW: "Zimbabwe", MW: "Malawi",
-    MZ: "Mozambique", AO: "Angola", ZM: "Zambia", BW: "Botswana",
-    NA: "Namibia", CD: "DR Congo", LY: "Libya", SD: "Sudan",
-    BB: "Barbados", BS: "Bahamas", CW: "Curaçao", AW: "Aruba",
-    KY: "Cayman Islands", BM: "Bermuda", BN: "Brunei",
-    TJ: "Tajikistan", TM: "Turkmenistan", AF: "Afghanistan",
-    OM: "Oman", YE: "Yemen", SY: "Syria", AM: "Armenia",
-    FJ: "Fiji", PG: "Papua New Guinea",
-    ME: "Montenegro", XK: "Kosovo", IS: "Iceland",
+    US: "United States",
+    CA: "Canada",
+    MX: "Mexico",
+    BR: "Brazil",
+    AR: "Argentina",
+    CL: "Chile",
+    CO: "Colombia",
+    PE: "Peru",
+    VE: "Venezuela",
+    EC: "Ecuador",
+    UY: "Uruguay",
+    PY: "Paraguay",
+    BO: "Bolivia",
+    CR: "Costa Rica",
+    DO: "Dominican Republic",
+    JM: "Jamaica",
+    PR: "Puerto Rico",
+    CU: "Cuba",
+    HN: "Honduras",
+    NI: "Nicaragua",
+    PA: "Panama",
+    GT: "Guatemala",
+    SV: "El Salvador",
+    TT: "Trinidad & Tobago",
+    BZ: "Belize",
+    HT: "Haiti",
+    GB: "United Kingdom",
+    DE: "Germany",
+    FR: "France",
+    NL: "Netherlands",
+    ES: "Spain",
+    IT: "Italy",
+    SE: "Sweden",
+    NO: "Norway",
+    FI: "Finland",
+    DK: "Denmark",
+    PL: "Poland",
+    AT: "Austria",
+    CH: "Switzerland",
+    BE: "Belgium",
+    PT: "Portugal",
+    IE: "Ireland",
+    CZ: "Czechia",
+    RO: "Romania",
+    HU: "Hungary",
+    GR: "Greece",
+    UA: "Ukraine",
+    RU: "Russia",
+    SK: "Slovakia",
+    BG: "Bulgaria",
+    RS: "Serbia",
+    HR: "Croatia",
+    SI: "Slovenia",
+    LT: "Lithuania",
+    LV: "Latvia",
+    EE: "Estonia",
+    BA: "Bosnia",
+    MK: "North Macedonia",
+    AL: "Albania",
+    LU: "Luxembourg",
+    MT: "Malta",
+    CY: "Cyprus",
+    MD: "Moldova",
+    BY: "Belarus",
+    AD: "Andorra",
+    GI: "Gibraltar",
+    TR: "Turkey",
+    AE: "UAE",
+    SA: "Saudi Arabia",
+    IL: "Israel",
+    IR: "Iran",
+    IQ: "Iraq",
+    JO: "Jordan",
+    LB: "Lebanon",
+    QA: "Qatar",
+    KW: "Kuwait",
+    BH: "Bahrain",
+    PS: "Palestine",
+    JP: "Japan",
+    KR: "South Korea",
+    CN: "China",
+    IN: "India",
+    ID: "Indonesia",
+    TH: "Thailand",
+    VN: "Vietnam",
+    PH: "Philippines",
+    MY: "Malaysia",
+    SG: "Singapore",
+    TW: "Taiwan",
+    HK: "Hong Kong",
+    AU: "Australia",
+    NZ: "New Zealand",
+    PK: "Pakistan",
+    BD: "Bangladesh",
+    LK: "Sri Lanka",
+    NP: "Nepal",
+    KH: "Cambodia",
+    KZ: "Kazakhstan",
+    KG: "Kyrgyzstan",
+    UZ: "Uzbekistan",
+    MN: "Mongolia",
+    MV: "Maldives",
+    GE: "Georgia",
+    AZ: "Azerbaijan",
+    MM: "Myanmar",
+    LA: "Laos",
+    ZA: "South Africa",
+    NG: "Nigeria",
+    KE: "Kenya",
+    EG: "Egypt",
+    MA: "Morocco",
+    DZ: "Algeria",
+    TN: "Tunisia",
+    ET: "Ethiopia",
+    UG: "Uganda",
+    GH: "Ghana",
+    TZ: "Tanzania",
+    SN: "Senegal",
+    CM: "Cameroon",
+    CI: "Côte d'Ivoire",
+    MG: "Madagascar",
+    MU: "Mauritius",
+    RW: "Rwanda",
+    ZW: "Zimbabwe",
+    MW: "Malawi",
+    MZ: "Mozambique",
+    AO: "Angola",
+    ZM: "Zambia",
+    BW: "Botswana",
+    NA: "Namibia",
+    CD: "DR Congo",
+    LY: "Libya",
+    SD: "Sudan",
+    BB: "Barbados",
+    BS: "Bahamas",
+    CW: "Curaçao",
+    AW: "Aruba",
+    KY: "Cayman Islands",
+    BM: "Bermuda",
+    BN: "Brunei",
+    TJ: "Tajikistan",
+    TM: "Turkmenistan",
+    AF: "Afghanistan",
+    OM: "Oman",
+    YE: "Yemen",
+    SY: "Syria",
+    AM: "Armenia",
+    FJ: "Fiji",
+    PG: "Papua New Guinea",
+    ME: "Montenegro",
+    XK: "Kosovo",
+    IS: "Iceland",
   };
 
-  var isDark =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
+  var isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
   function getColors() {
     return {
@@ -138,8 +247,12 @@
         var name = COUNTRY_NAMES[c.code] || c.code;
         html +=
           '<div class="network-country-row">' +
-          '<span class="network-country-name">' + name + "</span>" +
-          '<span class="network-country-count">' + formatNumber(c.requests) + "</span>" +
+          '<span class="network-country-name">' +
+          name +
+          "</span>" +
+          '<span class="network-country-count">' +
+          formatNumber(c.requests) +
+          "</span>" +
           "</div>";
       }
       listEl.innerHTML = html;
@@ -164,9 +277,26 @@
 
   // Jitter radius (degrees) per country — larger countries get more spread
   var JITTER: Record<string, number> = {
-    US: 8, CA: 7, RU: 12, CN: 8, AU: 7, BR: 7, IN: 5,
-    MX: 4, AR: 5, DE: 2, FR: 2.5, GB: 1.5, JP: 2,
-    ID: 4, SE: 3, NO: 3, FI: 3, PL: 2, ES: 2, IT: 2,
+    US: 8,
+    CA: 7,
+    RU: 12,
+    CN: 8,
+    AU: 7,
+    BR: 7,
+    IN: 5,
+    MX: 4,
+    AR: 5,
+    DE: 2,
+    FR: 2.5,
+    GB: 1.5,
+    JP: 2,
+    ID: 4,
+    SE: 3,
+    NO: 3,
+    FI: 3,
+    PL: 2,
+    ES: 2,
+    IT: 2,
   };
   var DEFAULT_JITTER = 1.5;
 
@@ -179,13 +309,9 @@
 
   var arcIdCounter = 0;
 
-  function makeArc(
-    slat: number, slng: number,
-    elat: number, elng: number,
-    weight: number,
-  ): Arc {
+  function makeArc(slat: number, slng: number, elat: number, elng: number, weight: number): Arc {
     return {
-      id: "a" + (arcIdCounter++),
+      id: "a" + arcIdCounter++,
       startLat: slat,
       startLng: slng,
       endLat: elat,
@@ -253,12 +379,20 @@
     var msgEl = document.getElementById("globe-message");
 
     var dataPromise = fetch("/api/network")
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; });
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .catch(function () {
+        return null;
+      });
 
     var topoPromise = fetch(TOPO_URL)
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .catch(function () { return null; });
+      .then(function (r) {
+        return r.ok ? r.json() : null;
+      })
+      .catch(function () {
+        return null;
+      });
 
     var [rawData, topology] = await Promise.all([dataPromise, topoPromise]);
     var data = rawData as TrafficData | null;
@@ -276,7 +410,9 @@
     try {
       var [globeMod, topoMod] = await Promise.all([
         import("globe.gl"),
-        import("topojson-client" as any).catch(function () { return null; }),
+        import("topojson-client" as any).catch(function () {
+          return null;
+        }),
       ]);
       Globe = globeMod.default;
       topojson = topoMod;
@@ -296,28 +432,33 @@
     var landFeatures: any[] = [];
     if (topology && topojson) {
       try {
-        var countries = topojson.feature(
-          topology,
-          topology.objects.countries || topology.objects.land,
-        );
+        var topo = topology as any;
+        var countries = topojson.feature(topo, topo.objects.countries || topo.objects.land);
         landFeatures = countries.features || [countries];
-      } catch { /* no land */ }
+      } catch {
+        /* no land */
+      }
     }
 
     // Points: origins + all edge colos
     var points: any[] = [];
     for (var i = 0; i < ORIGINS.length; i++) {
       points.push({
-        lat: ORIGINS[i]!.lat, lng: ORIGINS[i]!.lng,
-        size: 1.0, color: colors.origin, isOrigin: true,
+        lat: ORIGINS[i]!.lat,
+        lng: ORIGINS[i]!.lng,
+        size: 1.0,
+        color: colors.origin,
+        isOrigin: true,
       });
     }
     for (var i = 0; i < data.edgeColos.length; i++) {
       var c = data.edgeColos[i]!;
       points.push({
-        lat: c.lat, lng: c.lng,
+        lat: c.lat,
+        lng: c.lng,
         size: 0.5,
-        color: colors.point, isOrigin: false,
+        color: colors.point,
+        isOrigin: false,
       });
     }
 
@@ -333,23 +474,41 @@
       .atmosphereColor(colors.atmosphere)
       .atmosphereAltitude(0.15)
       .polygonsData(landFeatures)
-      .polygonCapColor(function () { return colors.land; })
-      .polygonSideColor(function () { return "rgba(0,0,0,0)"; })
-      .polygonStrokeColor(function () { return colors.landStroke; })
+      .polygonCapColor(function () {
+        return colors.land;
+      })
+      .polygonSideColor(function () {
+        return "rgba(0,0,0,0)";
+      })
+      .polygonStrokeColor(function () {
+        return colors.landStroke;
+      })
       .polygonAltitude(0.006)
       .pointsData(points)
-      .pointColor(function (d: any) { return d.color; })
-      .pointRadius(function (d: any) { return d.isOrigin ? 0.5 : 0.3; })
-      .pointAltitude(function (d: any) { return d.isOrigin ? 0.025 : 0.01; })
+      .pointColor(function (d: any) {
+        return d.color;
+      })
+      .pointRadius(function (d: any) {
+        return d.isOrigin ? 0.5 : 0.3;
+      })
+      .pointAltitude(function (d: any) {
+        return d.isOrigin ? 0.025 : 0.01;
+      })
       .ringsData(ringData)
-      .ringColor(function () { return colors.origin; })
+      .ringColor(function () {
+        return colors.origin;
+      })
       .ringMaxRadius(3)
       .ringPropagationSpeed(1.5)
       .ringRepeatPeriod(1200)
-      .arcColor(function () { return [colors.arc, colors.arcAlt]; })
+      .arcColor(function () {
+        return [colors.arc, colors.arcAlt];
+      })
       .arcDashLength(0.4)
       .arcDashGap(0.2)
-      .arcDashInitialGap(function (d: any) { return d.dashGap; })
+      .arcDashInitialGap(function (d: any) {
+        return d.dashGap;
+      })
       .arcDashAnimateTime(2500)
       .arcStroke(0.3)
       .arcsTransitionDuration(0)(container);
@@ -399,31 +558,39 @@
     window.addEventListener("resize", onResize);
 
     // Theme
-    window
-      .matchMedia("(prefers-color-scheme: dark)")
-      .addEventListener("change", function (e) {
-        isDark = e.matches;
-        var c = getColors();
-        globe
-          .atmosphereColor(c.atmosphere)
-          .pointColor(function (d: any) { return d.isOrigin ? c.origin : c.point; })
-          .arcColor(function () { return [c.arc, c.arcAlt]; })
-          .polygonCapColor(function () { return c.land; })
-          .polygonStrokeColor(function () { return c.landStroke; })
-          .ringColor(function () { return c.origin; });
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
+      isDark = e.matches;
+      var c = getColors();
+      globe
+        .atmosphereColor(c.atmosphere)
+        .pointColor(function (d: any) {
+          return d.isOrigin ? c.origin : c.point;
+        })
+        .arcColor(function () {
+          return [c.arc, c.arcAlt];
+        })
+        .polygonCapColor(function () {
+          return c.land;
+        })
+        .polygonStrokeColor(function () {
+          return c.landStroke;
+        })
+        .ringColor(function () {
+          return c.origin;
+        });
 
-        for (var j = 0; j < points.length; j++) {
-          points[j].color = points[j].isOrigin ? c.origin : c.point;
-        }
-        globe.pointsData(points);
+      for (var j = 0; j < points.length; j++) {
+        points[j].color = points[j].isOrigin ? c.origin : c.point;
+      }
+      globe.pointsData(points);
 
-        var mat = globe.globeMaterial();
-        if (mat) {
-          var rgb = hexToRgb(c.globe);
-          mat.color.setRGB(rgb.r, rgb.g, rgb.b);
-          mat.emissive = mat.color.clone();
-        }
-      });
+      var mat = globe.globeMaterial();
+      if (mat) {
+        var rgb = hexToRgb(c.globe);
+        mat.color.setRGB(rgb.r, rgb.g, rgb.b);
+        mat.emissive = mat.color.clone();
+      }
+    });
   }
 
   if (document.readyState === "loading") {

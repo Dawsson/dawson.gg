@@ -53,17 +53,13 @@ query TrafficByCountry($zoneTag: string!, $since: Time!, $until: Time!) {
 `;
 
 /** List all zone IDs for an account */
-async function listZones(
-  token: string,
-  accountId: string,
-): Promise<string[]> {
+async function listZones(token: string, accountId: string): Promise<string[]> {
   const zones: string[] = [];
   let page = 1;
   while (true) {
-    const res = await fetch(
-      `${CF_API}/zones?account.id=${accountId}&per_page=50&page=${page}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
+    const res = await fetch(`${CF_API}/zones?account.id=${accountId}&per_page=50&page=${page}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     if (!res.ok) break;
     const json = (await res.json()) as {
       result: { id: string }[];
@@ -170,12 +166,16 @@ function aggregateGroups(allGroups: GqlGroup[]): {
   return { countries, colos, total };
 }
 
-export async function refreshTrafficData(
-  env: Bindings,
-): Promise<TrafficData> {
+export async function refreshTrafficData(env: Bindings): Promise<TrafficData> {
   const token = env.CF_ANALYTICS_TOKEN;
   if (!token) {
-    return { updatedAt: new Date().toISOString(), totalRequests: 0, windowHours: 24, topCountries: [], edgeColos: [] };
+    return {
+      updatedAt: new Date().toISOString(),
+      totalRequests: 0,
+      windowHours: 24,
+      topCountries: [],
+      edgeColos: [],
+    };
   }
 
   const accounts = [
@@ -189,9 +189,7 @@ export async function refreshTrafficData(
   const until = now.toISOString();
 
   // List all zones across all accounts
-  const zonesByAccount = await Promise.all(
-    accounts.map((a) => listZones(a.token, a.accountId)),
-  );
+  const zonesByAccount = await Promise.all(accounts.map((a) => listZones(a.token, a.accountId)));
 
   // Build flat list of { token, zoneId } pairs
   const queries: { token: string; zoneId: string }[] = [];
@@ -202,9 +200,7 @@ export async function refreshTrafficData(
   }
 
   // Query all zones in parallel (batched to avoid overwhelming)
-  const results = await Promise.all(
-    queries.map((q) => queryZone(q.token, q.zoneId, since, until)),
-  );
+  const results = await Promise.all(queries.map((q) => queryZone(q.token, q.zoneId, since, until)));
 
   const allGroups = results.flat();
   const { countries, colos, total } = aggregateGroups(allGroups);
@@ -224,9 +220,7 @@ export async function refreshTrafficData(
   return data;
 }
 
-export async function fetchTrafficData(
-  env: Bindings,
-): Promise<TrafficData> {
+export async function fetchTrafficData(env: Bindings): Promise<TrafficData> {
   const cached = await env.CACHE.get(CACHE_KEY);
   if (cached) return JSON.parse(cached) as TrafficData;
   return refreshTrafficData(env);
