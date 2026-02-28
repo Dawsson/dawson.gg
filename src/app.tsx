@@ -8,6 +8,7 @@ import {
 import { buildIndex, searchNotes } from "./search.ts";
 import { renderMarkdown } from "./render.ts";
 import { fetchContributions } from "./contributions.ts";
+import { TECH_FILTER_SCRIPT } from "./client/tech-filter.ts";
 import {
   PortfolioLayout,
   BlogLayout,
@@ -45,10 +46,15 @@ function stripLeadingH1(md: string): string {
 export function createApp() {
   const app = new Hono<{ Bindings: Bindings }>();
 
-  // ─── Favicon ───
+  // ─── Static assets ───
 
-  app.get("/favicon.ico", (c) => {
-    return c.body(null, 204);
+  app.get("/favicon.ico", (c) => c.body(null, 204));
+
+  app.get("/tech-filter.js", (c) => {
+    return c.body(TECH_FILTER_SCRIPT, 200, {
+      "Content-Type": "application/javascript; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
+    });
   });
 
   // ─── Portfolio home ───
