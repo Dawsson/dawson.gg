@@ -4,6 +4,7 @@ import { COLO_COORDS, COUNTRY_COORDS } from "./coords.ts";
 const CACHE_KEY = "network:traffic:v1";
 const TTL = 600; // 10 minutes
 const CF_GQL = "https://api.cloudflare.com/client/v4/graphql";
+const CF_API = "https://api.cloudflare.com/client/v4";
 
 export interface TrafficCountry {
   code: string;
@@ -28,12 +29,12 @@ export interface TrafficData {
 }
 
 interface GqlGroup {
-  dimensions: { clientCountryName: string; coloCode: string };
+  dimensions: { clientCountryName: string };
   count: number;
 }
 
 const QUERY = `
-query TrafficByCountryAndColo($zoneTag: string!, $since: Time!, $until: Time!) {
+query TrafficByCountry($zoneTag: string!, $since: Time!, $until: Time!) {
   viewer {
     zones(filter: { zoneTag: $zoneTag }) {
       httpRequestsAdaptiveGroups(
@@ -44,7 +45,6 @@ query TrafficByCountryAndColo($zoneTag: string!, $since: Time!, $until: Time!) {
         count
         dimensions {
           clientCountryName
-          coloCode
         }
       }
     }
@@ -52,13 +52,36 @@ query TrafficByCountryAndColo($zoneTag: string!, $since: Time!, $until: Time!) {
 }
 `;
 
-async function queryAccount(
+/** List all zone IDs for an account */
+async function listZones(
+  token: string,
+  accountId: string,
+): Promise<string[]> {
+  const zones: string[] = [];
+  let page = 1;
+  while (true) {
+    const res = await fetch(
+      `${CF_API}/zones?account.id=${accountId}&per_page=50&page=${page}`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) break;
+    const json = (await res.json()) as {
+      result: { id: string }[];
+      result_info: { total_pages: number };
+    };
+    for (const z of json.result) zones.push(z.id);
+    if (page >= json.result_info.total_pages) break;
+    page++;
+  }
+  return zones;
+}
+
+async function queryZone(
   token: string,
   zoneTag: string,
+  since: string,
+  until: string,
 ): Promise<GqlGroup[]> {
-  const now = new Date();
-  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
   const res = await fetch(CF_GQL, {
     method: "POST",
     headers: {
@@ -67,18 +90,11 @@ async function queryAccount(
     },
     body: JSON.stringify({
       query: QUERY,
-      variables: {
-        zoneTag,
-        since: since.toISOString(),
-        until: now.toISOString(),
-      },
+      variables: { zoneTag, since, until },
     }),
   });
 
-  if (!res.ok) {
-    console.error(`CF GraphQL error for zone ${zoneTag}: ${res.status}`);
-    return [];
-  }
+  if (!res.ok) return [];
 
   const json = (await res.json()) as {
     data?: {
@@ -89,36 +105,51 @@ async function queryAccount(
     errors?: { message: string }[];
   };
 
-  if (json.errors?.length) {
-    console.error("CF GraphQL errors:", json.errors);
-    return [];
-  }
-
+  if (json.errors?.length) return [];
   return json.data?.viewer.zones[0]?.httpRequestsAdaptiveGroups ?? [];
 }
 
-function mergeGroups(allGroups: GqlGroup[]): {
+/** Find the nearest colo to a given lat/lng */
+function nearestColo(lat: number, lng: number): string | null {
+  let best: string | null = null;
+  let bestDist = Infinity;
+  for (const [code, [clat, clng]] of Object.entries(COLO_COORDS)) {
+    const dlat = clat - lat;
+    const dlng = clng - lng;
+    const dist = dlat * dlat + dlng * dlng;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = code;
+    }
+  }
+  return best;
+}
+
+function aggregateGroups(allGroups: GqlGroup[]): {
   countries: TrafficCountry[];
   colos: TrafficColo[];
   total: number;
 } {
   const countryMap = new Map<string, number>();
-  const coloMap = new Map<string, number>();
   let total = 0;
 
   for (const g of allGroups) {
     total += g.count;
     const cc = g.dimensions.clientCountryName;
-    const colo = g.dimensions.coloCode;
     countryMap.set(cc, (countryMap.get(cc) ?? 0) + g.count);
-    coloMap.set(colo, (coloMap.get(colo) ?? 0) + g.count);
   }
 
   const countries: TrafficCountry[] = [];
+  const coloMap = new Map<string, number>();
+
   for (const [code, requests] of countryMap) {
     const coords = COUNTRY_COORDS[code];
     if (coords) {
       countries.push({ code, lat: coords[0], lng: coords[1], requests });
+      const colo = nearestColo(coords[0], coords[1]);
+      if (colo) {
+        coloMap.set(colo, (coloMap.get(colo) ?? 0) + requests);
+      }
     }
   }
   countries.sort((a, b) => b.requests - a.requests);
@@ -138,18 +169,41 @@ function mergeGroups(allGroups: GqlGroup[]): {
 export async function refreshTrafficData(
   env: Bindings,
 ): Promise<TrafficData> {
-  const accounts = [
-    { token: env.CF_TOKEN_DAWSON, zone: env.CF_ZONE_DAWSON },
-    { token: env.CF_TOKEN_FLYTE, zone: env.CF_ZONE_FLYTE },
-    { token: env.CF_TOKEN_WIP, zone: env.CF_ZONE_WIP },
-  ].filter((a) => a.token && a.zone);
+  const token = env.CF_ANALYTICS_TOKEN;
+  if (!token) {
+    return { updatedAt: new Date().toISOString(), totalRequests: 0, windowHours: 24, topCountries: [], edgeColos: [] };
+  }
 
+  const accounts = [
+    { token, accountId: "3704af15f1156ed64a2150672c74248c" }, // Dawson
+    { token, accountId: "5b8b7a9d1dc0cd18a49d3f56d1f8fcfb" }, // Flyte
+    { token, accountId: "6b4865dd94efbedc2ea77b73bf89a5e8" }, // WIP
+  ];
+
+  const now = new Date();
+  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const until = now.toISOString();
+
+  // List all zones across all accounts
+  const zonesByAccount = await Promise.all(
+    accounts.map((a) => listZones(a.token, a.accountId)),
+  );
+
+  // Build flat list of { token, zoneId } pairs
+  const queries: { token: string; zoneId: string }[] = [];
+  for (let i = 0; i < accounts.length; i++) {
+    for (const zoneId of zonesByAccount[i]!) {
+      queries.push({ token: accounts[i]!.token, zoneId });
+    }
+  }
+
+  // Query all zones in parallel (batched to avoid overwhelming)
   const results = await Promise.all(
-    accounts.map((a) => queryAccount(a.token, a.zone)),
+    queries.map((q) => queryZone(q.token, q.zoneId, since, until)),
   );
 
   const allGroups = results.flat();
-  const { countries, colos, total } = mergeGroups(allGroups);
+  const { countries, colos, total } = aggregateGroups(allGroups);
 
   const data: TrafficData = {
     updatedAt: new Date().toISOString(),

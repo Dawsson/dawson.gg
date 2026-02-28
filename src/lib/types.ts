@@ -6,12 +6,7 @@ export interface Bindings {
   GITHUB_REPO: string;
   API_TOKEN: string;
   NODE_ENV: string;
-  CF_TOKEN_DAWSON: string;
-  CF_ZONE_DAWSON: string;
-  CF_TOKEN_FLYTE: string;
-  CF_ZONE_FLYTE: string;
-  CF_TOKEN_WIP: string;
-  CF_ZONE_WIP: string;
+  CF_ANALYTICS_TOKEN: string;
 }
 
 export interface Note {
