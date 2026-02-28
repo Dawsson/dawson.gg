@@ -602,7 +602,7 @@ body.portfolio {
 
 .footer-right {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.625rem;
 }
 
@@ -614,7 +614,7 @@ body.portfolio {
 }
 
 .footer-dot {
-  color: var(--border);
+  color: var(--text-faint);
   font-size: 0.75rem;
   user-select: none;
 }
