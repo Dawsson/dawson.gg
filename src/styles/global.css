@@ -598,22 +598,10 @@ body.portfolio {
   border-top: 1px solid var(--border);
 }
 
-.footer-live-link {
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
-
 .footer-live {
-  font-size: 0.75rem;
   font-family: var(--font-mono);
-  color: var(--text-faint);
-  text-decoration: none;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  transition: color 0.15s ease;
-}
-.footer-live:hover {
-  color: var(--accent);
+  letter-spacing: 0.02em;
+  font-size: 0.75rem;
 }
 
 .footer-grid {
