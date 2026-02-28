@@ -45,6 +45,12 @@ function stripLeadingH1(md: string): string {
 export function createApp() {
   const app = new Hono<{ Bindings: Bindings }>();
 
+  // ─── Favicon ───
+
+  app.get("/favicon.ico", (c) => {
+    return c.body(null, 204);
+  });
+
   // ─── Portfolio home ───
 
   app.get("/", async (c) => {

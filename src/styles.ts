@@ -31,7 +31,7 @@ export const SHARED_CSS = `
     --bg-card: #1c1917;
     --text: #fafaf9;
     --text-secondary: #a8a29e;
-    --text-faint: #78716c;
+    --text-faint: #8a8380;
     --accent: #fb923c;
     --accent-dim: #431407;
     --link: #fafaf9;
