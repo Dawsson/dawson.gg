@@ -23,9 +23,7 @@ const Head: FC<{
       href="https://fonts.gstatic.com"
       crossorigin="anonymous"
     />
-    {raw(
-      `<link rel="preload" href="${FONT_URL}" as="style" onload="this.onload=null;this.rel='stylesheet'" /><noscript><link rel="stylesheet" href="${FONT_URL}" /></noscript>`,
-    )}
+    <link href={FONT_URL} rel="stylesheet" />
     <title>{title} — dawson.gg</title>
     <style>{SHARED_CSS + css}</style>
   </head>
