@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bunx alchemy dev",
+    "dev": "CLOUDFLARE_ACCOUNT_ID=3704af15f1156ed64a2150672c74248c bunx alchemy dev",
     "build": "astro build",
     "deploy": "NODE_ENV=production bun run alchemy.run.ts",
     "destroy": "DESTROY=true bun run alchemy.run.ts",
@@ -20,7 +20,9 @@
     "@astrojs/cloudflare": "^12.6.12",
     "alchemy": "^0.85.1",
     "astro": "^5.18.0",
-    "marked": "^17.0.3"
+    "globe.gl": "^2.45.0",
+    "marked": "^17.0.3",
+    "three": "^0.183.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
