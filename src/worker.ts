@@ -2,6 +2,7 @@ import type { SSRManifest } from "astro";
 import { App } from "astro/app";
 import { handle } from "@astrojs/cloudflare/handler";
 import { refreshContributions } from "./lib/contributions.ts";
+import { refreshTrafficData } from "./lib/network.ts";
 import type { Bindings } from "./lib/types.ts";
 
 type Env = {
@@ -21,7 +22,9 @@ export function createExports(manifest: SSRManifest) {
       },
 
       async scheduled(_event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) {
-        ctx.waitUntil(refreshContributions(env));
+        ctx.waitUntil(
+          Promise.all([refreshContributions(env), refreshTrafficData(env)]),
+        );
       },
     },
   };

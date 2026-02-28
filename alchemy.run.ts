@@ -21,7 +21,7 @@ const site = await Astro("portfolio", {
   name: "portfolio",
   compatibility: "node",
   domains: ["dawson.gg"],
-  crons: ["0 */6 * * *"],
+  crons: ["*/10 * * * *"],
   bindings: {
     AI: ai,
     CACHE: cache,
@@ -30,6 +30,12 @@ const site = await Astro("portfolio", {
     API_TOKEN: secret(process.env.API_TOKEN),
     GITHUB_REPO: "Dawsson/vault",
     NODE_ENV: process.env.NODE_ENV ?? "development",
+    CF_TOKEN_DAWSON: secret(process.env.CF_TOKEN_DAWSON),
+    CF_ZONE_DAWSON: process.env.CF_ZONE_DAWSON ?? "",
+    CF_TOKEN_FLYTE: secret(process.env.CF_TOKEN_FLYTE),
+    CF_ZONE_FLYTE: process.env.CF_ZONE_FLYTE ?? "",
+    CF_TOKEN_WIP: secret(process.env.CF_TOKEN_WIP),
+    CF_ZONE_WIP: process.env.CF_ZONE_WIP ?? "",
   },
   url: true,
 });
