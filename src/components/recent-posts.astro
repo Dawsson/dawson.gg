@@ -1,8 +1,8 @@
 ---
-import type { VaultNote } from "@/lib/types.ts";
+import type { Note } from "@/lib/types.ts";
 
 interface Props {
-  notes: VaultNote[];
+  notes: Note[];
 }
 
 const { notes } = Astro.props;
@@ -21,7 +21,7 @@ function formatDate(dateStr: string): string {
   }
 }
 
-function getSnippet(note: VaultNote): { text: string; ellipsis: boolean } {
+function getSnippet(note: Note): { text: string; ellipsis: boolean } {
   const subtitle = String(note.frontmatter.subtitle || note.frontmatter.description || "");
   if (subtitle) return { text: subtitle, ellipsis: false };
 

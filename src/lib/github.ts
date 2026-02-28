@@ -1,4 +1,4 @@
-import type { Bindings, VaultNote } from "./types.ts";
+import type { Bindings, Note } from "./types.ts";
 
 interface GitHubTreeItem {
   path: string;
@@ -12,12 +12,12 @@ interface GitHubContent {
 }
 
 /** Fetch only notes in Public/ */
-export async function fetchPublicNotes(env: Bindings): Promise<VaultNote[]> {
+export async function fetchPublicNotes(env: Bindings): Promise<Note[]> {
   return fetchNotesByPrefix(env, "Public/");
 }
 
-/** Fetch ALL markdown notes in the vault */
-export async function fetchAllNotes(env: Bindings): Promise<VaultNote[]> {
+/** Fetch ALL markdown notes */
+export async function fetchAllNotes(env: Bindings): Promise<Note[]> {
   const tree = await fetchTree(env);
   const mdFiles = tree.filter(
     (item) =>
@@ -29,7 +29,7 @@ export async function fetchAllNotes(env: Bindings): Promise<VaultNote[]> {
       item.path !== "CLAUDE.md",
   );
 
-  const notes: VaultNote[] = [];
+  const notes: Note[] = [];
   for (const file of mdFiles) {
     const note = await fetchNote(env, file.path);
     if (note) notes.push(note);
@@ -41,20 +41,20 @@ export async function fetchAllNotes(env: Bindings): Promise<VaultNote[]> {
 export async function fetchNoteByPath(
   env: Bindings,
   path: string,
-): Promise<VaultNote | null> {
+): Promise<Note | null> {
   return fetchNote(env, path);
 }
 
 async function fetchNotesByPrefix(
   env: Bindings,
   prefix: string,
-): Promise<VaultNote[]> {
+): Promise<Note[]> {
   const tree = await fetchTree(env);
   const files = tree.filter(
     (item) => item.path.startsWith(prefix) && item.path.endsWith(".md"),
   );
 
-  const notes: VaultNote[] = [];
+  const notes: Note[] = [];
   for (const file of files) {
     const note = await fetchNote(env, file.path);
     if (note) notes.push(note);
@@ -69,7 +69,7 @@ async function fetchTree(env: Bindings): Promise<GitHubTreeItem[]> {
       headers: {
         Authorization: `Bearer ${env.GITHUB_TOKEN}`,
         Accept: "application/vnd.github.v3+json",
-        "User-Agent": "vault-site",
+        "User-Agent": "dawson-portfolio",
       },
     },
   );
@@ -82,14 +82,14 @@ async function fetchTree(env: Bindings): Promise<GitHubTreeItem[]> {
 async function fetchNote(
   env: Bindings,
   path: string,
-): Promise<VaultNote | null> {
+): Promise<Note | null> {
   const res = await fetch(
     `https://api.github.com/repos/${env.GITHUB_REPO}/contents/${path}`,
     {
       headers: {
         Authorization: `Bearer ${env.GITHUB_TOKEN}`,
         Accept: "application/vnd.github.v3+json",
-        "User-Agent": "vault-site",
+        "User-Agent": "dawson-portfolio",
       },
     },
   );

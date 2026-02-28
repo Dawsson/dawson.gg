@@ -1,24 +1,24 @@
 import alchemy, { secret } from "alchemy";
 import { Ai, Astro, KVNamespace, VectorizeIndex } from "alchemy/cloudflare";
 
-const app = await alchemy("vault-site", {
+const app = await alchemy("portfolio", {
   phase: process.env.DESTROY ? "destroy" : "up",
 });
 
 const ai = Ai();
 
-const cache = await KVNamespace("vault-cache", {
-  title: "vault-cache",
+const cache = await KVNamespace("portfolio-cache", {
+  title: "portfolio-cache",
 });
 
-const vectorIndex = await VectorizeIndex("vault-search", {
+const vectorIndex = await VectorizeIndex("portfolio-search", {
   dimensions: 768,
   metric: "cosine",
   adopt: true,
 });
 
-const site = await Astro("vault-site", {
-  name: "vault-site",
+const site = await Astro("portfolio", {
+  name: "portfolio",
   compatibility: "node",
   domains: ["dawson.gg"],
   crons: ["0 */6 * * *"],
@@ -34,6 +34,6 @@ const site = await Astro("vault-site", {
   url: true,
 });
 
-console.log(`Vault site: ${site.url}`);
+console.log(`Portfolio: ${site.url}`);
 
 await app.finalize();

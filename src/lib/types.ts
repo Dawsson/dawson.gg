@@ -8,7 +8,7 @@ export interface Bindings {
   NODE_ENV: string;
 }
 
-export interface VaultNote {
+export interface Note {
   path: string;
   title: string;
   content: string;

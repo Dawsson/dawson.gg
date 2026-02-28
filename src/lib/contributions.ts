@@ -13,7 +13,7 @@ const TTL = 21600; // 6 hours
 
 async function fetchFromGitHub(): Promise<ContribData> {
   const res = await fetch("https://github.com/users/Dawsson/contributions", {
-    headers: { "User-Agent": "vault-site" },
+    headers: { "User-Agent": "dawson-portfolio" },
   });
   const html = await res.text();
 

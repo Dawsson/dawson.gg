@@ -3,7 +3,7 @@ import BlogLayout from "@/layouts/blog.astro";
 import Nav from "@/components/nav.astro";
 import { fetchPublicNotes } from "@/lib/github.ts";
 import { renderMarkdown } from "@/lib/render.ts";
-import type { Bindings, VaultNote } from "@/lib/types.ts";
+import type { Bindings, Note } from "@/lib/types.ts";
 
 const env = Astro.locals.runtime.env as Bindings;
 const path = Astro.params.path ?? "";
@@ -19,13 +19,13 @@ if (!decoded.startsWith("Public/")) {
 }
 
 // Get notes with caching
-let notes: VaultNote[];
-const cached = await env.CACHE.get("vault:public-notes");
+let notes: Note[];
+const cached = await env.CACHE.get("notes:public");
 if (cached) {
-  notes = JSON.parse(cached) as VaultNote[];
+  notes = JSON.parse(cached) as Note[];
 } else {
   notes = await fetchPublicNotes(env);
-  await env.CACHE.put("vault:public-notes", JSON.stringify(notes), { expirationTtl: 300 });
+  await env.CACHE.put("notes:public", JSON.stringify(notes), { expirationTtl: 300 });
 }
 
 const note = notes.find((n) => n.path === decoded);

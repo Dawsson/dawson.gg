@@ -1,4 +1,4 @@
-import type { Bindings, SearchResult, VaultNote } from "./types.ts";
+import type { Bindings, SearchResult, Note } from "./types.ts";
 import { PROJECTS, TECHNOLOGIES } from "./data.ts";
 
 const EMBEDDING_MODEL = "@cf/baai/bge-base-en-v1.5";
@@ -28,11 +28,11 @@ export async function searchNotes(
 
 export async function buildIndex(
   env: Bindings,
-  notes: VaultNote[],
+  notes: Note[],
 ): Promise<{ indexed: number }> {
   const vectors: VectorizeVector[] = [];
 
-  // Index vault notes
+  // Index notes
   for (const note of notes) {
     const chunks = chunkText(note.content);
     if (chunks.length === 0) continue;
