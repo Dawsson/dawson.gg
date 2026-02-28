@@ -1,0 +1,13 @@
+// Bindings config for local dev with `astro dev` / wrangler proxy.
+// Production bindings are managed by Alchemy in alchemy.run.ts.
+{
+  "name": "vault-site",
+  "compatibility_date": "2025-02-04",
+  "kv_namespaces": [
+    { "binding": "CACHE", "id": "placeholder" }
+  ],
+  "vectorize": [
+    { "binding": "VECTORIZE", "index_name": "vault-search" }
+  ],
+  "ai": { "binding": "AI" }
+}

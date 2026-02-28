@@ -1,0 +1,42 @@
+---
+import PortfolioLayout from "@/layouts/portfolio.astro";
+import Hero from "@/components/hero.astro";
+import GitHub from "@/components/github.astro";
+import Projects from "@/components/projects.astro";
+import Technologies from "@/components/technologies.astro";
+import RecentPosts from "@/components/recent-posts.astro";
+import Footer from "@/components/footer.astro";
+import { fetchPublicNotes } from "@/lib/github.ts";
+import { fetchContributions } from "@/lib/contributions.ts";
+import type { Bindings } from "@/lib/types.ts";
+import type { VaultNote } from "@/lib/types.ts";
+
+const env = Astro.locals.runtime.env as Bindings;
+
+// Fetch public notes with caching
+let notes: VaultNote[];
+const cached = await env.CACHE.get("vault:public-notes");
+if (cached) {
+  notes = JSON.parse(cached) as VaultNote[];
+} else {
+  notes = await fetchPublicNotes(env);
+  await env.CACHE.put("vault:public-notes", JSON.stringify(notes), { expirationTtl: 300 });
+}
+const recentNotes = notes.slice(0, 5);
+
+let contribData;
+try {
+  contribData = await fetchContributions(env);
+} catch {
+  contribData = null;
+}
+---
+
+<PortfolioLayout title="Dawson — Software Engineer">
+  <Hero />
+  {contribData && <GitHub data={contribData} />}
+  <Projects />
+  <Technologies />
+  <RecentPosts notes={recentNotes} />
+  <Footer />
+</PortfolioLayout>

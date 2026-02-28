@@ -1,0 +1,51 @@
+---
+import { TECHNOLOGIES, CATEGORY_LABELS } from "@/lib/data.ts";
+
+const categories = Object.entries(CATEGORY_LABELS).map(([key, label]) => ({ key, label }));
+---
+
+<section class="section" id="technologies">
+  <h2 class="section-label">Technologies</h2>
+  <div class="tech-controls">
+    <div class="tech-controls-top">
+      <input
+        type="text"
+        id="tech-filter"
+        class="tech-filter-input"
+        placeholder={`Search ${TECHNOLOGIES.length} technologies...`}
+      />
+      <span class="tech-count" id="tech-count"></span>
+      <span class="tech-time" id="tech-time"></span>
+    </div>
+    <div class="cat-buttons">
+      <button class="cat-btn active" data-cat="featured" onclick="filterCat('featured')">Featured</button>
+      <button class="cat-btn" data-cat="all" onclick="filterCat('all')">All {TECHNOLOGIES.length}</button>
+      <span class="cat-divider"></span>
+      {categories.map((cat) => (
+        <button class="cat-btn" data-cat={cat.key} onclick={`filterCat('${cat.key}')`}>
+          {cat.label}
+        </button>
+      ))}
+    </div>
+  </div>
+  <div class="tech-grid" id="tech-grid">
+    {TECHNOLOGIES.map((t) => (
+      <div
+        class="tech-item"
+        data-name={t.name.toLowerCase()}
+        data-cat={t.category}
+        data-slug={t.slug}
+        data-desc={t.description.toLowerCase()}
+        data-kw={(t.keywords || "").toLowerCase()}
+        data-featured={String(t.featured)}
+        title={`${t.name} — ${t.description}`}
+        style={t.featured ? undefined : "display:none"}
+      >
+        <span class="tech-name">{t.name}</span>
+        <span class="tech-cat">{CATEGORY_LABELS[t.category]}</span>
+      </div>
+    ))}
+  </div>
+</section>
+
+<script src="@/scripts/tech-filter.ts"></script>

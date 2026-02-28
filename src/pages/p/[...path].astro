@@ -1,0 +1,51 @@
+---
+import BlogLayout from "@/layouts/blog.astro";
+import Nav from "@/components/nav.astro";
+import { fetchPublicNotes } from "@/lib/github.ts";
+import { renderMarkdown } from "@/lib/render.ts";
+import type { Bindings, VaultNote } from "@/lib/types.ts";
+
+const env = Astro.locals.runtime.env as Bindings;
+const path = Astro.params.path ?? "";
+const decoded = decodeURIComponent(path);
+
+function stripLeadingH1(md: string): string {
+  return md.replace(/^# .+\n*/m, "");
+}
+
+// 404 if not a Public/ note
+if (!decoded.startsWith("Public/")) {
+  return new Response(null, { status: 404 });
+}
+
+// Get notes with caching
+let notes: VaultNote[];
+const cached = await env.CACHE.get("vault:public-notes");
+if (cached) {
+  notes = JSON.parse(cached) as VaultNote[];
+} else {
+  notes = await fetchPublicNotes(env);
+  await env.CACHE.put("vault:public-notes", JSON.stringify(notes), { expirationTtl: 300 });
+}
+
+const note = notes.find((n) => n.path === decoded);
+if (!note) {
+  return new Response(null, { status: 404 });
+}
+
+const body = stripLeadingH1(note.content);
+const rendered = renderMarkdown(body);
+---
+
+<BlogLayout title={note.title}>
+  <Nav />
+  <article>
+    <header class="note-header">
+      <h1>{note.title}</h1>
+      {note.frontmatter.created && (
+        <time>{String(note.frontmatter.created)}</time>
+      )}
+    </header>
+    <Fragment set:html={rendered} />
+  </article>
+</BlogLayout>

@@ -1,0 +1,32 @@
+---
+import BlogLayout from "@/layouts/blog.astro";
+import Nav from "@/components/nav.astro";
+import { fetchPublicNotes } from "@/lib/github.ts";
+import type { Bindings, VaultNote } from "@/lib/types.ts";
+
+const env = Astro.locals.runtime.env as Bindings;
+
+let notes: VaultNote[];
+const cached = await env.CACHE.get("vault:public-notes");
+if (cached) {
+  notes = JSON.parse(cached) as VaultNote[];
+} else {
+  notes = await fetchPublicNotes(env);
+  await env.CACHE.put("vault:public-notes", JSON.stringify(notes), { expirationTtl: 300 });
+}
+---
+
+<BlogLayout title="Posts">
+  <Nav />
+  <div class="home-header">
+    <h1>Posts</h1>
+    <p>Notes, ideas, and things worth writing down.</p>
+  </div>
+  <ul class="note-list">
+    {notes.map((n) => (
+      <li>
+        <a href={`/p/${encodeURIComponent(n.path)}`}>{n.title}</a>
+      </li>
+    ))}
+  </ul>
+</BlogLayout>

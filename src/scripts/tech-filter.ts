@@ -1,24 +1,15 @@
-/**
- * Client-side technology filter with fuzzy search.
- * Exported as a string constant — served at /tech-filter.js by the Worker.
- *
- * Edit the JS below normally; it's readable source that ships as-is.
- * No build step, no minification — it's small enough (~4 KB).
- */
-
-// prettier-ignore
-export const TECH_FILTER_SCRIPT = `(function () {
+(function () {
   "use strict";
 
   var activeCat = "featured";
 
   // ─── Fuzzy search ───
 
-  function normalize(str) {
-    return str.replace(/[-_]/g, " ").replace(/\\s+/g, " ");
+  function normalize(str: string) {
+    return str.replace(/[-_]/g, " ").replace(/\s+/g, " ");
   }
 
-  function fuzzyWordScore(word, target) {
+  function fuzzyWordScore(word: string, target: string) {
     if (!word) return 0;
     var w = normalize(word);
     var t = normalize(target);
@@ -30,7 +21,7 @@ export const TECH_FILTER_SCRIPT = `(function () {
     // Word-start match
     var targetWords = t.split(" ");
     for (var i = 0; i < targetWords.length; i++) {
-      if (targetWords[i].indexOf(w) === 0) return 0.95;
+      if (targetWords[i]!.indexOf(w) === 0) return 0.95;
     }
 
     // Skip short queries for fuzzy
@@ -43,7 +34,7 @@ export const TECH_FILTER_SCRIPT = `(function () {
     if (w.endsWith("s") && w.length > 4) stems.push(w.slice(0, -1));
 
     for (var si = 1; si < stems.length; si++) {
-      if (stems[si].length >= 3 && t.indexOf(stems[si]) !== -1) return 0.85;
+      if (stems[si]!.length >= 3 && t.indexOf(stems[si]!) !== -1) return 0.85;
     }
 
     // Subsequence matching with consecutive bonus
@@ -62,15 +53,15 @@ export const TECH_FILTER_SCRIPT = `(function () {
     return (score / (w.length * 4)) * (0.5 + 0.5 * lengthPenalty);
   }
 
-  function computeSearchScore(query, fields) {
-    var words = query.trim().split(/\\s+/).filter(function (w) { return w.length > 0; });
+  function computeSearchScore(query: string, fields: { text: string; weight: number }[]) {
+    var words = query.trim().split(/\s+/).filter(function (w) { return w.length > 0; });
     if (words.length === 0) return 0;
 
     var totalScore = 0;
     for (var wi = 0; wi < words.length; wi++) {
       var bestWordScore = 0;
       for (var fi = 0; fi < fields.length; fi++) {
-        var s = fuzzyWordScore(words[wi], fields[fi].text) * fields[fi].weight;
+        var s = fuzzyWordScore(words[wi]!, fields[fi]!.text) * fields[fi]!.weight;
         if (s > bestWordScore) bestWordScore = s;
       }
       if (bestWordScore === 0) return 0;
@@ -83,7 +74,7 @@ export const TECH_FILTER_SCRIPT = `(function () {
 
   function syncToUrl() {
     var params = new URLSearchParams();
-    var q = document.getElementById("tech-filter").value || "";
+    var q = (document.getElementById("tech-filter") as HTMLInputElement).value || "";
     if (q) params.set("q", q);
     if (activeCat !== "featured") params.set("category", activeCat);
     var str = params.toString();
@@ -92,7 +83,7 @@ export const TECH_FILTER_SCRIPT = `(function () {
 
   // ─── Filtering ───
 
-  function filterByCategory(cat) {
+  function filterByCategory(cat: string) {
     activeCat = cat;
     document.querySelectorAll(".cat-btn").forEach(function (btn) {
       btn.classList.toggle("active", btn.getAttribute("data-cat") === cat);
@@ -103,19 +94,20 @@ export const TECH_FILTER_SCRIPT = `(function () {
 
   function applyFilter() {
     var t0 = performance.now();
-    var query = (document.getElementById("tech-filter").value || "").toLowerCase();
+    var query = ((document.getElementById("tech-filter") as HTMLInputElement).value || "").toLowerCase();
     var hasQuery = query.length > 0;
     var visibleCount = 0;
     var items = document.querySelectorAll(".tech-item");
-    var scored = [];
+    var scored: { el: HTMLElement; show: boolean; score: number }[] = [];
 
     items.forEach(function (el) {
-      var name = el.getAttribute("data-name") || "";
-      var cat = el.getAttribute("data-cat") || "";
-      var desc = el.getAttribute("data-desc") || "";
-      var slug = el.getAttribute("data-slug") || "";
-      var keywords = el.getAttribute("data-kw") || "";
-      var isFeatured = el.getAttribute("data-featured") === "true";
+      var htmlEl = el as HTMLElement;
+      var name = htmlEl.getAttribute("data-name") || "";
+      var cat = htmlEl.getAttribute("data-cat") || "";
+      var desc = htmlEl.getAttribute("data-desc") || "";
+      var slug = htmlEl.getAttribute("data-slug") || "";
+      var keywords = htmlEl.getAttribute("data-kw") || "";
+      var isFeatured = htmlEl.getAttribute("data-featured") === "true";
 
       if (hasQuery) {
         var score = computeSearchScore(query, [
@@ -125,7 +117,7 @@ export const TECH_FILTER_SCRIPT = `(function () {
           { text: desc, weight: 0.6 },
           { text: cat, weight: 0.5 }
         ]);
-        scored.push({ el: el, show: score > 0, score: score });
+        scored.push({ el: htmlEl, show: score > 0, score: score });
         return;
       }
 
@@ -134,13 +126,13 @@ export const TECH_FILTER_SCRIPT = `(function () {
       if (activeCat === "featured") show = isFeatured;
       else if (activeCat === "all") show = true;
       else show = cat === activeCat;
-      scored.push({ el: el, show: show, score: 0 });
+      scored.push({ el: htmlEl, show: show, score: 0 });
     });
 
     // Sort by relevance when searching
     if (hasQuery) {
       scored.sort(function (a, b) { return b.score - a.score; });
-      var grid = document.getElementById("tech-grid");
+      var grid = document.getElementById("tech-grid")!;
       scored.forEach(function (s) { grid.appendChild(s.el); });
     }
 
@@ -152,17 +144,17 @@ export const TECH_FILTER_SCRIPT = `(function () {
 
     // Update stats
     var elapsed = performance.now() - t0;
-    document.getElementById("tech-count").textContent = visibleCount + " shown";
-    document.getElementById("tech-time").textContent = hasQuery
+    document.getElementById("tech-count")!.textContent = visibleCount + " shown";
+    document.getElementById("tech-time")!.textContent = hasQuery
       ? (elapsed < 1 ? "< 1ms" : elapsed.toFixed(1) + "ms")
       : "";
   }
 
   // ─── Init ───
 
-  window.filterCat = filterByCategory;
+  (window as any).filterCat = filterByCategory;
 
-  document.getElementById("tech-filter").addEventListener("input", function () {
+  document.getElementById("tech-filter")!.addEventListener("input", function () {
     applyFilter();
     syncToUrl();
   });
@@ -172,7 +164,7 @@ export const TECH_FILTER_SCRIPT = `(function () {
   var savedQuery = params.get("q");
   var savedCat = params.get("category");
 
-  if (savedQuery) document.getElementById("tech-filter").value = savedQuery;
+  if (savedQuery) (document.getElementById("tech-filter") as HTMLInputElement).value = savedQuery;
   if (savedCat) {
     activeCat = savedCat;
     document.querySelectorAll(".cat-btn").forEach(function (btn) {
@@ -180,4 +172,4 @@ export const TECH_FILTER_SCRIPT = `(function () {
     });
   }
   if (savedQuery || savedCat) applyFilter();
-})();`;
+})();
