@@ -36,9 +36,9 @@ export interface Profile {
 
 export const PROFILE: Profile = {
   name: "Dawson",
-  title: "Software Engineer",
+  title: "Full Stack Developer",
   intro:
-    "Building products across the stack — from mobile apps to cloud infrastructure. I care about shipping fast, clean architecture, and tools that get out of the way.",
+    "Full stack developer building products end-to-end — from <strong>React Native</strong> mobile apps to <strong>cloud infrastructure</strong> on AWS and Cloudflare. I ship fast, care about <strong>clean architecture</strong>, and reach for tools that get out of the way.",
   links: [
     { label: "GitHub", url: "https://github.com/Dawsson" },
     { label: "X", url: "https://x.com/DawssonMonroe" },

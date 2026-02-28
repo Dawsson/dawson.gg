@@ -231,6 +231,10 @@ body.portfolio {
   line-height: 1.7;
   margin-bottom: 1.5rem;
 }
+.hero-intro strong {
+  color: var(--text);
+  font-weight: 600;
+}
 
 .section {
   margin-bottom: 4rem;
@@ -319,6 +323,31 @@ body.portfolio {
 }
 .project-card:hover {
   border-color: var(--accent);
+}
+
+.project-card--wip {
+  position: relative;
+  overflow: hidden;
+}
+.project-card--wip > *:not(.project-wip-overlay) {
+  filter: blur(4px);
+  user-select: none;
+  pointer-events: none;
+}
+.project-wip-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.project-wip-overlay span {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
 }
 
 .project-card h3 {

@@ -4,5 +4,5 @@ import { PROFILE } from "@/lib/data.ts";
 
 <section class="hero">
   <h1 class="hero-name">{PROFILE.name}</h1>
-  <p class="hero-intro">{PROFILE.intro}</p>
+  <p class="hero-intro" set:html={PROFILE.intro} />
 </section>
