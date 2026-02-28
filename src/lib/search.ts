@@ -68,7 +68,7 @@ export async function buildIndex(env: Bindings, notes: Note[]): Promise<{ indexe
 
   // Index technologies
   for (const tech of TECHNOLOGIES) {
-    const text = `${tech.name}: ${tech.description} Category: ${tech.category}`;
+    const text = `${tech.name}: ${tech.description} Category: ${tech.categories.join(", ")}`;
     const emb = await embed(env, text);
     vectors.push({
       id: `tech:${tech.slug}`,

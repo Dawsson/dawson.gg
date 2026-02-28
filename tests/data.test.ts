@@ -29,7 +29,7 @@ describe("data integrity", () => {
   });
 
   test("all technology categories have labels", () => {
-    const categories = new Set(TECHNOLOGIES.map((t) => t.category));
+    const categories = new Set(TECHNOLOGIES.flatMap((t) => t.categories));
     for (const category of categories) {
       expect(CATEGORY_LABELS[category]).toBeTruthy();
     }

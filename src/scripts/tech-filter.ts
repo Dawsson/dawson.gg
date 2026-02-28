@@ -113,7 +113,7 @@
     items.forEach(function (el) {
       var htmlEl = el as HTMLElement;
       var name = htmlEl.getAttribute("data-name") || "";
-      var cat = htmlEl.getAttribute("data-cat") || "";
+      var cats = (htmlEl.getAttribute("data-cat") || "").split(",");
       var desc = htmlEl.getAttribute("data-desc") || "";
       var slug = htmlEl.getAttribute("data-slug") || "";
       var keywords = htmlEl.getAttribute("data-kw") || "";
@@ -125,7 +125,7 @@
           { text: slug, weight: 0.8 },
           { text: keywords, weight: 0.7 },
           { text: desc, weight: 0.6 },
-          { text: cat, weight: 0.5 },
+          { text: cats.join(" "), weight: 0.5 },
         ]);
         scored.push({ el: htmlEl, show: score > 0, score: score });
         return;
@@ -135,7 +135,7 @@
       var show = false;
       if (activeCat === "featured") show = isFeatured;
       else if (activeCat === "all") show = true;
-      else show = cat === activeCat;
+      else show = cats.indexOf(activeCat) !== -1;
       scored.push({ el: htmlEl, show: show, score: 0 });
     });
 

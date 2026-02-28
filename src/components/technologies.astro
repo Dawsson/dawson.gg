@@ -33,7 +33,7 @@ const categories = Object.entries(CATEGORY_LABELS).map(([key, label]) => ({ key,
       <div
         class="tech-item"
         data-name={t.name.toLowerCase()}
-        data-cat={t.category}
+        data-cat={t.categories.join(",")}
         data-slug={t.slug}
         data-desc={t.description.toLowerCase()}
         data-kw={(t.keywords || "").toLowerCase()}
@@ -42,7 +42,7 @@ const categories = Object.entries(CATEGORY_LABELS).map(([key, label]) => ({ key,
         style={t.featured ? undefined : "display:none"}
       >
         <span class="tech-name">{t.name}</span>
-        <span class="tech-cat">{CATEGORY_LABELS[t.category]}</span>
+        <span class="tech-cat">{CATEGORY_LABELS[t.categories[0]]}</span>
       </div>
     ))}
   </div>
