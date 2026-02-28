@@ -394,6 +394,43 @@ body.portfolio {
   color: var(--accent);
 }
 
+.network-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.network-cta:hover {
+  color: var(--accent);
+}
+.network-cta-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+  position: relative;
+}
+.network-cta-dot::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 50%;
+  border: 1px solid #22c55e;
+  animation: ripple 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+}
+.network-cta-arrow {
+  transition: transform 0.15s ease;
+}
+.network-cta:hover .network-cta-arrow {
+  transform: translateX(3px);
+}
+
 .tech-controls {
   margin-bottom: 1rem;
 }
