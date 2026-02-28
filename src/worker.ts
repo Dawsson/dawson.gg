@@ -1,4 +1,5 @@
-import { createApp, refreshContributions } from "./app.ts";
+import { createApp } from "./app.tsx";
+import { refreshContributions } from "./contributions.ts";
 import type { Bindings } from "./types.ts";
 
 const app = createApp();
