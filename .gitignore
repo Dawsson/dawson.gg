@@ -34,6 +34,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Finder (MacOS) folder config
 .DS_Store
 
+# wrangler local state
+.wrangler/
+
 # alchemy state
 .alchemy/
 lighthouse-report.json
