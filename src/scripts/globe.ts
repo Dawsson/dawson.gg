@@ -24,11 +24,13 @@
   }
 
   interface Arc {
+    id: string;
     startLat: number;
     startLng: number;
     endLat: number;
     endLng: number;
     weight: number;
+    dashGap: number;
   }
 
   // Dedicated origin servers
@@ -116,6 +118,24 @@
     return best;
   }
 
+  var arcIdCounter = 0;
+
+  function makeArc(
+    slat: number, slng: number,
+    elat: number, elng: number,
+    weight: number,
+  ): Arc {
+    return {
+      id: "a" + (arcIdCounter++),
+      startLat: slat,
+      startLng: slng,
+      endLat: elat,
+      endLng: elng,
+      weight: weight,
+      dashGap: Math.random() * 2, // stagger start position
+    };
+  }
+
   function buildArcPool(data: TrafficData): Arc[] {
     var arcs: Arc[] = [];
     var maxCountry = data.topCountries[0]?.requests ?? 1;
@@ -126,13 +146,11 @@
 
       // Arc from country → nearest origin server
       var origin = nearestOrigin(country.lat, country.lng);
-      arcs.push({
-        startLat: country.lat,
-        startLng: country.lng,
-        endLat: origin.lat,
-        endLng: origin.lng,
-        weight: weight,
-      });
+      arcs.push(makeArc(
+        country.lat, country.lng,
+        origin.lat, origin.lng,
+        weight,
+      ));
 
       // Also arc to nearest Cloudflare edge colo
       if (data.edgeColos.length > 0) {
@@ -148,20 +166,23 @@
             nearest = c;
           }
         }
-        arcs.push({
-          startLat: country.lat,
-          startLng: country.lng,
-          endLat: nearest.lat,
-          endLng: nearest.lng,
-          weight: weight * 0.7,
-        });
+        arcs.push(makeArc(
+          country.lat, country.lng,
+          nearest.lat, nearest.lng,
+          weight * 0.7,
+        ));
       }
     }
     return arcs;
   }
 
   function pickActiveArcs(pool: Arc[], count: number): Arc[] {
-    if (pool.length <= count) return pool.slice();
+    if (pool.length <= count) {
+      // Return fresh copies with new IDs so globe.gl treats them as new objects
+      return pool.map(function (a) {
+        return makeArc(a.startLat, a.startLng, a.endLat, a.endLng, a.weight);
+      });
+    }
 
     var indices = pool.map(function (_, i) {
       return i;
@@ -185,7 +206,8 @@
           break;
         }
       }
-      selected.push(pool[indices[pick]!]!);
+      var src = pool[indices[pick]!]!;
+      selected.push(makeArc(src.startLat, src.startLng, src.endLat, src.endLng, src.weight));
       indices.splice(pick, 1);
     }
     return selected;
@@ -337,13 +359,16 @@
       .arcColor(function () {
         return [colors.arc, colors.arcAlt];
       })
-      .arcDashLength(0.5)
-      .arcDashGap(0.25)
-      .arcDashAnimateTime(2200)
+      .arcDashLength(0.4)
+      .arcDashGap(0.2)
+      .arcDashInitialGap(function (d: any) {
+        return d.dashGap;
+      })
+      .arcDashAnimateTime(2500)
       .arcStroke(function (d: any) {
         return 0.15 + (d.weight ?? 0.3) * 0.45;
       })
-      .arcsTransitionDuration(1000)(container);
+      .arcsTransitionDuration(0)(container);
 
     // Style globe surface (ocean color)
     var globeMat = globe.globeMaterial();
@@ -371,13 +396,10 @@
     globe.arcsData(activeArcs);
 
     setInterval(function () {
-      // Keep ~60% of arcs, replace the rest
-      var keep = Math.ceil(activeArcs.length * 0.6);
-      var kept = activeArcs.slice(0, keep);
-      var fresh = pickActiveArcs(arcPool, activeArcs.length - keep);
-      activeArcs = kept.concat(fresh);
+      // Full swap with fresh arc objects (new IDs + random dashGap offsets)
+      activeArcs = pickActiveArcs(arcPool, 15);
       globe.arcsData(activeArcs);
-    }, 4000);
+    }, 5000);
 
     // Resize
     window.addEventListener("resize", function () {
