@@ -14,6 +14,35 @@ if (cached) {
   notes = await fetchPublicNotes(env);
   await env.CACHE.put("notes:public", JSON.stringify(notes), { expirationTtl: 300 });
 }
+
+function formatDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function getSnippet(note: Note): string {
+  const subtitle = String(note.frontmatter.subtitle || note.frontmatter.description || "");
+  if (subtitle) return subtitle;
+
+  const cleaned = note.content
+    .replace(/^#+ .*/gm, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`~]/g, "")
+    .trim()
+    .slice(0, 160)
+    .trim();
+
+  return cleaned ? cleaned + (note.content.length > 160 ? "..." : "") : "";
+}
 ---
 
 <BlogLayout title="Posts">
@@ -22,11 +51,20 @@ if (cached) {
     <h1>Posts</h1>
     <p>Notes, ideas, and things worth writing down.</p>
   </div>
-  <ul class="note-list">
-    {notes.map((n) => (
-      <li>
-        <a href={`/p/${encodeURIComponent(n.path)}`}>{n.title}</a>
-      </li>
-    ))}
-  </ul>
+  <div class="posts-feed">
+    {notes.map((n) => {
+      const date = n.frontmatter.created ? formatDate(String(n.frontmatter.created)) : "";
+      const snippet = getSnippet(n);
+
+      return (
+        <a href={`/p/${encodeURIComponent(n.path)}`} class="post-entry">
+          <div class="post-entry-header">
+            <h2 class="post-entry-title">{n.title}</h2>
+            {date && <time class="post-entry-date">{date}</time>}
+          </div>
+          {snippet && <p class="post-entry-snippet">{snippet}</p>}
+        </a>
+      );
+    })}
+  </div>
 </BlogLayout>

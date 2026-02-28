@@ -14,7 +14,6 @@ function formatDate(dateStr: string): string {
     return d.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
-      year: "numeric",
     });
   } catch {
     return dateStr;
@@ -30,10 +29,10 @@ function getSnippet(note: Note): { text: string; ellipsis: boolean } {
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/[*_`~]/g, "")
     .trim()
-    .slice(0, 140)
+    .slice(0, 120)
     .trim();
 
-  return { text: cleaned, ellipsis: note.content.length > 140 };
+  return { text: cleaned, ellipsis: note.content.length > 120 };
 }
 ---
 
@@ -43,23 +42,23 @@ function getSnippet(note: Note): { text: string; ellipsis: boolean } {
       <h2 class="section-label">Recent Posts</h2>
       <a href="/posts" class="see-all">All posts &rarr;</a>
     </div>
-    <div class="posts-list">
-      {notes.map((n) => {
+    <div class="recent-posts">
+      {notes.map((n, i) => {
         const date = n.frontmatter.created ? formatDate(String(n.frontmatter.created)) : "";
         const { text, ellipsis } = getSnippet(n);
 
         return (
-          <a href={`/p/${encodeURIComponent(n.path)}`} class="post-card">
-            <div class="post-card-content">
-              <h3 class="post-card-title">{n.title}</h3>
-              {text && (
-                <p class="post-card-snippet">
-                  {text}{ellipsis && "..."}
-                </p>
-              )}
+          <a href={`/p/${encodeURIComponent(n.path)}`} class="recent-post">
+            <div class="recent-post-top">
+              <span class="recent-post-index">{String(i + 1).padStart(2, "0")}</span>
+              {date && <time class="recent-post-date">{date}</time>}
             </div>
-            {date && <time class="post-card-date">{date}</time>}
-            <span class="post-card-arrow">&rarr;</span>
+            <h3 class="recent-post-title">{n.title}</h3>
+            {text && (
+              <p class="recent-post-snippet">
+                {text}{ellipsis && "..."}
+              </p>
+            )}
           </a>
         );
       })}
