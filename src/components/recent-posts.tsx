@@ -1,0 +1,72 @@
+import type { FC } from "hono/jsx";
+import type { VaultNote } from "../types.ts";
+
+function formatDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function getSnippet(note: VaultNote): { text: string; ellipsis: boolean } {
+  const subtitle = String(
+    note.frontmatter.subtitle || note.frontmatter.description || "",
+  );
+  if (subtitle) return { text: subtitle, ellipsis: false };
+
+  const cleaned = note.content
+    .replace(/^#+ .*/gm, "")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`~]/g, "")
+    .trim()
+    .slice(0, 140)
+    .trim();
+
+  return { text: cleaned, ellipsis: note.content.length > 140 };
+}
+
+export const RecentPosts: FC<{ notes: VaultNote[] }> = ({ notes }) => {
+  if (notes.length === 0) return <></>;
+
+  return (
+    <section class="section" id="posts">
+      <div class="section-header">
+        <h2 class="section-label">Recent Posts</h2>
+        <a href="/posts" class="see-all">
+          All posts &rarr;
+        </a>
+      </div>
+      <div class="posts-list">
+        {notes.map((n) => {
+          const date = n.frontmatter.created
+            ? formatDate(String(n.frontmatter.created))
+            : "";
+          const { text, ellipsis } = getSnippet(n);
+
+          return (
+            <a href={`/p/${encodeURIComponent(n.path)}`} class="post-card">
+              <div class="post-card-content">
+                <h3 class="post-card-title">{n.title}</h3>
+                {text && (
+                  <p class="post-card-snippet">
+                    {text}
+                    {ellipsis && "..."}
+                  </p>
+                )}
+              </div>
+              {date && <time class="post-card-date">{date}</time>}
+              <span class="post-card-arrow">&rarr;</span>
+            </a>
+          );
+        })}
+      </div>
+    </section>
+  );
+};

@@ -1,7 +1,7 @@
 export { PortfolioLayout, BlogLayout, Nav, ErrorPage } from "./layouts.tsx";
-export { Hero } from "./Hero.tsx";
-export { Footer } from "./Footer.tsx";
-export { GitHub } from "./GitHub.tsx";
-export { Projects } from "./Projects.tsx";
-export { Technologies } from "./Technologies.tsx";
-export { RecentPosts } from "./RecentPosts.tsx";
+export { Hero } from "./hero.tsx";
+export { Footer } from "./footer.tsx";
+export { GitHub } from "./github.tsx";
+export { Projects } from "./projects.tsx";
+export { Technologies } from "./technologies.tsx";
+export { RecentPosts } from "./recent-posts.tsx";
