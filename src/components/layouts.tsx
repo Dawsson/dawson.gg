@@ -37,31 +37,37 @@ const DEFAULT_DESC =
 export const PortfolioLayout: FC<
   PropsWithChildren<{ title: string; description?: string }>
 > = ({ title, description, children }) => (
-  <html lang="en">
-    <Head
-      title={title}
-      description={description ?? DEFAULT_DESC}
-      css={PORTFOLIO_CSS}
-    />
-    <body>
-      <main>{children}</main>
-    </body>
-  </html>
+  <>
+    {raw("<!DOCTYPE html>")}
+    <html lang="en">
+      <Head
+        title={title}
+        description={description ?? DEFAULT_DESC}
+        css={PORTFOLIO_CSS}
+      />
+      <body>
+        <main>{children}</main>
+      </body>
+    </html>
+  </>
 );
 
 export const BlogLayout: FC<
   PropsWithChildren<{ title: string; description?: string }>
 > = ({ title, description, children }) => (
-  <html lang="en">
-    <Head
-      title={title}
-      description={description ?? DEFAULT_DESC}
-      css={BLOG_CSS}
-    />
-    <body>
-      <main>{children}</main>
-    </body>
-  </html>
+  <>
+    {raw("<!DOCTYPE html>")}
+    <html lang="en">
+      <Head
+        title={title}
+        description={description ?? DEFAULT_DESC}
+        css={BLOG_CSS}
+      />
+      <body>
+        <main>{children}</main>
+      </body>
+    </html>
+  </>
 );
 
 export const Nav: FC = () => (
