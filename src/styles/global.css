@@ -768,6 +768,24 @@ body.network-page {
   flex-direction: column;
   padding: 2rem 1.75rem;
   overflow-y: auto;
+  position: relative;
+  z-index: 2;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-faint) transparent;
+}
+.network-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.network-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.network-sidebar::-webkit-scrollbar-thumb {
+  background: var(--text-faint);
+  border-radius: 3px;
+}
+.network-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
 }
 
 .network-back {

@@ -152,7 +152,9 @@ function aggregateGroups(allGroups: GqlGroup[]): {
       }
     }
   }
-  countries.sort((a, b) => b.requests - a.requests);
+  // Filter out countries with <1000 requests for privacy
+  const filtered = countries.filter((c) => c.requests >= 1000);
+  filtered.sort((a, b) => b.requests - a.requests);
 
   const colos: TrafficColo[] = [];
   for (const [code, requests] of coloMap) {
@@ -163,7 +165,7 @@ function aggregateGroups(allGroups: GqlGroup[]): {
   }
   colos.sort((a, b) => b.requests - a.requests);
 
-  return { countries, colos, total };
+  return { countries: filtered, colos, total };
 }
 
 export async function refreshTrafficData(
