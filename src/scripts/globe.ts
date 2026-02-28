@@ -77,6 +77,17 @@
     UG: "Uganda", GH: "Ghana", TZ: "Tanzania", SN: "Senegal",
     CM: "Cameroon", CI: "Côte d'Ivoire", MG: "Madagascar",
     MU: "Mauritius", RW: "Rwanda", ZW: "Zimbabwe", MW: "Malawi",
+    MZ: "Mozambique", AO: "Angola", ZM: "Zambia", BW: "Botswana",
+    NA: "Namibia", CD: "DR Congo", LY: "Libya", SD: "Sudan",
+    PA: "Panama", GT: "Guatemala", SV: "El Salvador",
+    TT: "Trinidad & Tobago", BZ: "Belize", HT: "Haiti",
+    BB: "Barbados", BS: "Bahamas", CW: "Curaçao", AW: "Aruba",
+    KY: "Cayman Islands", BM: "Bermuda",
+    MM: "Myanmar", LA: "Laos", BN: "Brunei",
+    TJ: "Tajikistan", TM: "Turkmenistan", AF: "Afghanistan",
+    OM: "Oman", YE: "Yemen", SY: "Syria", AM: "Armenia",
+    FJ: "Fiji", PG: "Papua New Guinea",
+    ME: "Montenegro", XK: "Kosovo", IS: "Iceland",
   };
 
   var isDark =
@@ -121,20 +132,32 @@
       el.textContent = rps < 1 ? rps.toFixed(2) : Math.round(rps).toLocaleString();
     }
 
+    // Aggregate regional sub-entries back into unique countries
+    var countryTotals: Record<string, number> = {};
+    for (var i = 0; i < data.topCountries.length; i++) {
+      var c = data.topCountries[i]!;
+      countryTotals[c.code] = (countryTotals[c.code] || 0) + c.requests;
+    }
+    var uniqueCountries: { code: string; requests: number }[] = [];
+    for (var code in countryTotals) {
+      uniqueCountries.push({ code: code, requests: countryTotals[code]! });
+    }
+    uniqueCountries.sort(function (a, b) { return b.requests - a.requests; });
+
     el = document.getElementById("net-countries");
-    if (el) el.textContent = data.topCountries.length.toString();
+    if (el) el.textContent = uniqueCountries.length.toString();
 
     // Populate country list
     var listEl = document.querySelector(".network-countries-list");
     if (listEl) {
       var html = "";
-      for (var i = 0; i < data.topCountries.length; i++) {
-        var c = data.topCountries[i]!;
-        var name = COUNTRY_NAMES[c.code] || c.code;
+      for (var i = 0; i < uniqueCountries.length; i++) {
+        var uc = uniqueCountries[i]!;
+        var name = COUNTRY_NAMES[uc.code] || uc.code;
         html +=
           '<div class="network-country-row">' +
           '<span class="network-country-name">' + name + "</span>" +
-          '<span class="network-country-count">' + formatNumber(c.requests) + "</span>" +
+          '<span class="network-country-count">' + formatNumber(uc.requests) + "</span>" +
           "</div>";
       }
       listEl.innerHTML = html;
@@ -338,7 +361,7 @@
       .arcDashGap(0.2)
       .arcDashInitialGap(function (d: any) { return d.dashGap; })
       .arcDashAnimateTime(2500)
-      .arcStroke(function (d: any) { return 0.15 + (d.weight ?? 0.3) * 0.45; })
+      .arcStroke(function (d: any) { return 0.15 + Math.sqrt(d.weight ?? 0.3) * 0.3; })
       .arcsTransitionDuration(0)(container);
 
     // Style globe surface

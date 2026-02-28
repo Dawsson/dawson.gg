@@ -125,6 +125,55 @@ function nearestColo(lat: number, lng: number): string | null {
   return best;
 }
 
+/**
+ * Large countries get split into regional sub-points so arcs
+ * spread across the map instead of converging on one centroid.
+ * Each region gets a proportional share of the country's total traffic.
+ */
+const REGIONAL_SPLITS: Record<string, { code: string; lat: number; lng: number; share: number }[]> = {
+  US: [
+    { code: "US", lat: 40.71, lng: -74.01, share: 0.28 },   // NYC / East Coast
+    { code: "US", lat: 34.05, lng: -118.24, share: 0.22 },  // LA / West Coast
+    { code: "US", lat: 41.88, lng: -87.63, share: 0.18 },   // Chicago / Midwest
+    { code: "US", lat: 33.75, lng: -84.39, share: 0.16 },   // Atlanta / Southeast
+    { code: "US", lat: 32.78, lng: -96.80, share: 0.10 },   // Dallas / South
+    { code: "US", lat: 47.61, lng: -122.33, share: 0.06 },  // Seattle / Pacific NW
+  ],
+  CA: [
+    { code: "CA", lat: 43.65, lng: -79.38, share: 0.45 },   // Toronto / Ontario
+    { code: "CA", lat: 49.28, lng: -123.12, share: 0.25 },  // Vancouver / BC
+    { code: "CA", lat: 45.50, lng: -73.57, share: 0.20 },   // Montreal / Quebec
+    { code: "CA", lat: 51.05, lng: -114.07, share: 0.10 },  // Calgary / Alberta
+  ],
+  RU: [
+    { code: "RU", lat: 55.76, lng: 37.62, share: 0.60 },    // Moscow
+    { code: "RU", lat: 59.93, lng: 30.32, share: 0.25 },    // St. Petersburg
+    { code: "RU", lat: 56.84, lng: 60.60, share: 0.15 },    // Yekaterinburg
+  ],
+  CN: [
+    { code: "CN", lat: 31.23, lng: 121.47, share: 0.35 },   // Shanghai
+    { code: "CN", lat: 39.90, lng: 116.40, share: 0.30 },   // Beijing
+    { code: "CN", lat: 22.54, lng: 114.06, share: 0.20 },   // Shenzhen
+    { code: "CN", lat: 30.57, lng: 104.07, share: 0.15 },   // Chengdu
+  ],
+  AU: [
+    { code: "AU", lat: -33.87, lng: 151.21, share: 0.50 },  // Sydney
+    { code: "AU", lat: -37.81, lng: 144.96, share: 0.30 },  // Melbourne
+    { code: "AU", lat: -27.47, lng: 153.03, share: 0.20 },  // Brisbane
+  ],
+  BR: [
+    { code: "BR", lat: -23.55, lng: -46.63, share: 0.50 },  // São Paulo
+    { code: "BR", lat: -22.91, lng: -43.17, share: 0.30 },  // Rio
+    { code: "BR", lat: -15.79, lng: -47.88, share: 0.20 },  // Brasília
+  ],
+  IN: [
+    { code: "IN", lat: 19.08, lng: 72.88, share: 0.35 },    // Mumbai
+    { code: "IN", lat: 28.61, lng: 77.21, share: 0.30 },    // Delhi
+    { code: "IN", lat: 12.97, lng: 77.59, share: 0.20 },    // Bangalore
+    { code: "IN", lat: 22.57, lng: 88.36, share: 0.15 },    // Kolkata
+  ],
+};
+
 function aggregateGroups(allGroups: GqlGroup[]): {
   countries: TrafficCountry[];
   colos: TrafficColo[];
@@ -143,16 +192,30 @@ function aggregateGroups(allGroups: GqlGroup[]): {
   const coloMap = new Map<string, number>();
 
   for (const [code, requests] of countryMap) {
-    const coords = COUNTRY_COORDS[code];
-    if (coords) {
-      countries.push({ code, lat: coords[0], lng: coords[1], requests });
-      const colo = nearestColo(coords[0], coords[1]);
-      if (colo) {
-        coloMap.set(colo, (coloMap.get(colo) ?? 0) + requests);
+    const regions = REGIONAL_SPLITS[code];
+    if (regions) {
+      // Split into regional sub-points
+      for (const region of regions) {
+        const regionReqs = Math.round(requests * region.share);
+        countries.push({ code: region.code, lat: region.lat, lng: region.lng, requests: regionReqs });
+        const colo = nearestColo(region.lat, region.lng);
+        if (colo) {
+          coloMap.set(colo, (coloMap.get(colo) ?? 0) + regionReqs);
+        }
+      }
+    } else {
+      const coords = COUNTRY_COORDS[code];
+      if (coords) {
+        countries.push({ code, lat: coords[0], lng: coords[1], requests });
+        const colo = nearestColo(coords[0], coords[1]);
+        if (colo) {
+          coloMap.set(colo, (coloMap.get(colo) ?? 0) + requests);
+        }
       }
     }
   }
-  // Filter out countries with <1000 requests for privacy
+
+  // Filter out entries with <1000 requests for privacy
   const filtered = countries.filter((c) => c.requests >= 1000);
   filtered.sort((a, b) => b.requests - a.requests);
 
