@@ -1,0 +1,44 @@
+---
+import PortfolioLayout from "@/layouts/portfolio.astro";
+import Nav from "@/components/nav.astro";
+import Footer from "@/components/footer.astro";
+---
+
+<PortfolioLayout title="Network — Global Traffic">
+  <Nav />
+
+  <div class="network-hero">
+    <h1 class="section-label">Network</h1>
+    <p class="network-subtitle">
+      Real HTTP traffic flowing from users worldwide to Cloudflare's edge — aggregated across all my projects over the last 24 hours.
+    </p>
+  </div>
+
+  <div class="network-stats">
+    <div class="network-stat-card">
+      <span class="network-stat-value" id="net-total">—</span>
+      <span class="network-stat-label">Requests (24h)</span>
+    </div>
+    <div class="network-stat-card">
+      <span class="network-stat-value" id="net-countries">—</span>
+      <span class="network-stat-label">Countries</span>
+    </div>
+    <div class="network-stat-card">
+      <span class="network-stat-value" id="net-edges">—</span>
+      <span class="network-stat-label">Edge Locations</span>
+    </div>
+    <div class="network-stat-card">
+      <span class="network-stat-value" id="net-updated">—</span>
+      <span class="network-stat-label">Last Updated</span>
+    </div>
+  </div>
+
+  <div class="globe-wrap">
+    <div id="globe-container"></div>
+    <p id="globe-message" class="globe-message">Loading globe…</p>
+  </div>
+
+  <Footer />
+</PortfolioLayout>
+
+<script src="@/scripts/globe.ts"></script>
