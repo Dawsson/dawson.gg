@@ -153,9 +153,7 @@ function aggregateGroups(allGroups: GqlGroup[]): {
     }
   }
 
-  // Filter out entries with <1000 requests for privacy
-  const filtered = countries.filter((c) => c.requests >= 1000);
-  filtered.sort((a, b) => b.requests - a.requests);
+  countries.sort((a, b) => b.requests - a.requests);
 
   // Include ALL known Cloudflare PoPs as edge locations
   const colos: TrafficColo[] = [];
@@ -169,7 +167,7 @@ function aggregateGroups(allGroups: GqlGroup[]): {
   }
   colos.sort((a, b) => b.requests - a.requests);
 
-  return { countries: filtered, colos, total };
+  return { countries, colos, total };
 }
 
 export async function refreshTrafficData(

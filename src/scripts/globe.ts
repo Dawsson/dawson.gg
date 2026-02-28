@@ -129,32 +129,17 @@
       el.textContent = rps < 1 ? rps.toFixed(2) : Math.round(rps).toLocaleString();
     }
 
-    // Aggregate regional sub-entries back into unique countries
-    var countryTotals: Record<string, number> = {};
-    for (var i = 0; i < data.topCountries.length; i++) {
-      var c = data.topCountries[i]!;
-      countryTotals[c.code] = (countryTotals[c.code] || 0) + c.requests;
-    }
-    var uniqueCountries: { code: string; requests: number }[] = [];
-    for (var code in countryTotals) {
-      uniqueCountries.push({ code: code, requests: countryTotals[code]! });
-    }
-    uniqueCountries.sort(function (a, b) { return b.requests - a.requests; });
-
-    el = document.getElementById("net-countries");
-    if (el) el.textContent = uniqueCountries.length.toString();
-
     // Populate country list
     var listEl = document.querySelector(".network-countries-list");
     if (listEl) {
       var html = "";
-      for (var i = 0; i < uniqueCountries.length; i++) {
-        var uc = uniqueCountries[i]!;
-        var name = COUNTRY_NAMES[uc.code] || uc.code;
+      for (var i = 0; i < data.topCountries.length; i++) {
+        var c = data.topCountries[i]!;
+        var name = COUNTRY_NAMES[c.code] || c.code;
         html +=
           '<div class="network-country-row">' +
           '<span class="network-country-name">' + name + "</span>" +
-          '<span class="network-country-count">' + formatNumber(uc.requests) + "</span>" +
+          '<span class="network-country-count">' + formatNumber(c.requests) + "</span>" +
           "</div>";
       }
       listEl.innerHTML = html;

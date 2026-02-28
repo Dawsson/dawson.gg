@@ -805,7 +805,10 @@ body.network-page {
 }
 
 .network-header {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
 }
 
 .network-title {
@@ -814,7 +817,7 @@ body.network-page {
   font-weight: 400;
   font-style: italic;
   letter-spacing: -0.02em;
-  margin: 0 0 0.5rem;
+  margin: 0;
 }
 
 .network-realtime {
@@ -823,12 +826,8 @@ body.network-page {
   gap: 0.375rem;
   font-size: 0.6875rem;
   font-family: var(--font-mono);
-  color: var(--text-faint);
+  color: #22c55e;
   letter-spacing: 0.02em;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 3px;
-  text-decoration-color: var(--text-faint);
   cursor: help;
 }
 
@@ -852,30 +851,29 @@ body.network-page {
 
 .network-stats-group {
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
   margin-bottom: 2rem;
-  padding-bottom: 2rem;
+  padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--border);
 }
 
 .network-stat {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  flex-direction: column;
 }
 
 .network-stat-value {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 400;
+  font-family: var(--font-mono);
+  font-size: 1.25rem;
+  font-weight: 500;
   letter-spacing: -0.02em;
   color: var(--text);
 }
 
 .network-stat-label {
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   color: var(--text-faint);
+  margin-top: 0.125rem;
 }
 
 .network-countries-title {
