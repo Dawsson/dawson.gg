@@ -606,6 +606,13 @@ body.portfolio {
   gap: 0.625rem;
 }
 
+.footer-divider {
+  width: 1px;
+  height: 1rem;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
 .footer-dot {
   color: var(--border);
   font-size: 0.75rem;
