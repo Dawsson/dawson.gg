@@ -9,7 +9,6 @@ interface Props {
 
 const { title, description } = Astro.props;
 const defaultDesc = "Dawson — Software engineer building products across the stack, from mobile apps to cloud infrastructure.";
-const faviconSvg = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>";
 ---
 
 <!doctype html>
@@ -18,7 +17,8 @@ const faviconSvg = "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' v
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description ?? defaultDesc} />
-    <link rel="icon" href={faviconSvg} />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <title>{title} — dawson.gg</title>
   </head>
   <body class="blog">
