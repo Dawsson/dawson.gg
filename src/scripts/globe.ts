@@ -199,7 +199,8 @@
   };
 
   var isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  var DEBUG_NETWORK = new URLSearchParams(window.location.search).get("debugNetwork") === "1";
+  var search = new URLSearchParams(window.location.search);
+  var DEBUG_NETWORK = search.get("debugNetwork") === "1" || search.get("debugnetwork") === "1";
   var VITE_RETRY_KEY = "network:globe-vite-retry";
 
   function getColors() {
