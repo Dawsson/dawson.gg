@@ -199,6 +199,7 @@
   };
 
   var isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  var DEBUG_NETWORK = new URLSearchParams(window.location.search).get("debugNetwork") === "1";
 
   function getColors() {
     return {
@@ -397,9 +398,33 @@
     var [rawData, topology] = await Promise.all([dataPromise, topoPromise]);
     var data = rawData as TrafficData | null;
 
+    if (DEBUG_NETWORK) {
+      console.info("[network] api response", data);
+    }
+
     if (!data?.topCountries?.length) {
       if (msgEl) msgEl.textContent = "No traffic data yet";
+      if (DEBUG_NETWORK) {
+        console.warn("[network] no topCountries returned");
+      }
       return;
+    }
+
+    if (DEBUG_NETWORK) {
+      var us = data.topCountries.find(function (c) {
+        return c.code === "US";
+      });
+      var au = data.topCountries.find(function (c) {
+        return c.code === "AU";
+      });
+      console.info("[network] topCountries summary", {
+        totalRequests: data.totalRequests,
+        countryCount: data.topCountries.length,
+        edgeColoCount: data.edgeColos.length,
+        us,
+        au,
+        top10: data.topCountries.slice(0, 10),
+      });
     }
 
     populateStats(data);
@@ -534,6 +559,9 @@
     // --- Staggered arc cycling ---
     // Start with a full set, then replace ONE arc at a time on a fast interval
     var arcSources = buildArcSources(data);
+    if (DEBUG_NETWORK) {
+      console.info("[network] arc sources", arcSources.slice(0, 20));
+    }
     var ARC_COUNT = 18;
     var activeArcs: Arc[] = [];
     for (var i = 0; i < ARC_COUNT; i++) {
