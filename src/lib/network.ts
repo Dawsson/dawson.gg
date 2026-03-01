@@ -29,7 +29,7 @@ export interface TrafficData {
 }
 
 interface GqlGroup {
-  dimensions: { clientCountryName: string };
+  dimensions: { clientCountry?: string; clientCountryName?: string };
   count: number;
 }
 
@@ -44,6 +44,7 @@ query TrafficByCountry($zoneTag: string!, $since: Time!, $until: Time!) {
       ) {
         count
         dimensions {
+          clientCountry
           clientCountryName
         }
       }
@@ -51,6 +52,62 @@ query TrafficByCountry($zoneTag: string!, $since: Time!, $until: Time!) {
   }
 }
 `;
+
+const COUNTRY_NAME_ALIASES: Record<string, string> = {
+  "UNITED STATES": "US",
+  "UNITED STATES OF AMERICA": "US",
+  "UNITED KINGDOM": "GB",
+  "GREAT BRITAIN": "GB",
+  "SOUTH KOREA": "KR",
+  "NORTH KOREA": "KP",
+  "RUSSIA": "RU",
+  "RUSSIAN FEDERATION": "RU",
+  "CZECH REPUBLIC": "CZ",
+  "UAE": "AE",
+  "HONG KONG SAR": "HK",
+};
+
+const DISPLAY_NAME_TO_CODE = buildDisplayNameToCodeMap();
+
+function normalizeCountryName(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toUpperCase();
+}
+
+function buildDisplayNameToCodeMap(): Map<string, string> {
+  const map = new Map<string, string>();
+  const display = new Intl.DisplayNames(["en"], { type: "region" });
+  for (const code of Object.keys(COUNTRY_COORDS)) {
+    try {
+      const name = display.of(code);
+      if (name) map.set(normalizeCountryName(name), code);
+    } catch {
+      // Ignore invalid region codes for Intl and rely on explicit aliases.
+    }
+  }
+  return map;
+}
+
+function resolveCountryCode(dimensions: GqlGroup["dimensions"]): string | null {
+  const codeCandidate = dimensions.clientCountry?.trim().toUpperCase();
+  if (codeCandidate && COUNTRY_COORDS[codeCandidate]) {
+    return codeCandidate;
+  }
+
+  const nameCandidate = dimensions.clientCountryName?.trim();
+  if (!nameCandidate) return null;
+
+  const normalized = normalizeCountryName(nameCandidate);
+
+  if (COUNTRY_COORDS[normalized]) return normalized;
+
+  const aliased = COUNTRY_NAME_ALIASES[normalized];
+  if (aliased && COUNTRY_COORDS[aliased]) return aliased;
+
+  const fromDisplayName = DISPLAY_NAME_TO_CODE.get(normalized);
+  if (fromDisplayName && COUNTRY_COORDS[fromDisplayName]) return fromDisplayName;
+
+  return null;
+}
 
 /** List all zone IDs for an account */
 async function listZones(token: string, accountId: string): Promise<string[]> {
@@ -127,12 +184,19 @@ function aggregateGroups(allGroups: GqlGroup[]): {
   total: number;
 } {
   const countryMap = new Map<string, number>();
+  const unresolvedMap = new Map<string, number>();
   let total = 0;
 
   for (const g of allGroups) {
     total += g.count;
-    const cc = g.dimensions.clientCountryName;
-    countryMap.set(cc, (countryMap.get(cc) ?? 0) + g.count);
+    const cc = resolveCountryCode(g.dimensions);
+    if (cc) {
+      countryMap.set(cc, (countryMap.get(cc) ?? 0) + g.count);
+      continue;
+    }
+
+    const unresolvedKey = g.dimensions.clientCountryName ?? g.dimensions.clientCountry ?? "UNKNOWN";
+    unresolvedMap.set(unresolvedKey, (unresolvedMap.get(unresolvedKey) ?? 0) + g.count);
   }
 
   const countries: TrafficCountry[] = [];
@@ -162,6 +226,19 @@ function aggregateGroups(allGroups: GqlGroup[]): {
     });
   }
   colos.sort((a, b) => b.requests - a.requests);
+
+  if (unresolvedMap.size > 0) {
+    const unresolvedTop = Array.from(unresolvedMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 20)
+      .map(([country, requests]) => ({ country, requests }));
+    const unresolvedTotal = Array.from(unresolvedMap.values()).reduce((sum, n) => sum + n, 0);
+    console.warn("[network] unresolved country mappings", {
+      unresolvedCount: unresolvedMap.size,
+      unresolvedRequests: unresolvedTotal,
+      unresolvedTop,
+    });
+  }
 
   return { countries, colos, total };
 }
@@ -204,6 +281,15 @@ export async function refreshTrafficData(env: Bindings): Promise<TrafficData> {
 
   const allGroups = results.flat();
   const { countries, colos, total } = aggregateGroups(allGroups);
+
+  console.info("[network] traffic refresh summary", {
+    accounts: accounts.length,
+    zonesQueried: queries.length,
+    groups: allGroups.length,
+    resolvedCountries: countries.length,
+    totalRequests: total,
+    topCountries: countries.slice(0, 10).map((c) => ({ code: c.code, requests: c.requests })),
+  });
 
   const data: TrafficData = {
     updatedAt: new Date().toISOString(),
