@@ -202,11 +202,13 @@
   var search = new URLSearchParams(window.location.search);
   var DEBUG_NETWORK = search.get("debugNetwork") === "1" || search.get("debugnetwork") === "1";
   var VITE_RETRY_KEY = "network:globe-vite-retry";
-  var ARC_ANIMATE_MS = 2200;
-  var DEFAULT_ARC_LIFETIME_MS = 3200;
+  var ARC_ANIMATE_MS = 900;
+  var DEFAULT_ARC_LIFETIME_MS = 950;
   var arcLifetimeParam = Number(search.get("arcLifetimeMs"));
   var ARC_LIFETIME_MS =
-    Number.isFinite(arcLifetimeParam) && arcLifetimeParam > 100 ? arcLifetimeParam : DEFAULT_ARC_LIFETIME_MS;
+    Number.isFinite(arcLifetimeParam) && arcLifetimeParam > 100
+      ? arcLifetimeParam
+      : DEFAULT_ARC_LIFETIME_MS;
 
   function getColors() {
     return {
