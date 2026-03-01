@@ -202,6 +202,10 @@
   var search = new URLSearchParams(window.location.search);
   var DEBUG_NETWORK = search.get("debugNetwork") === "1" || search.get("debugnetwork") === "1";
   var VITE_RETRY_KEY = "network:globe-vite-retry";
+  var DEFAULT_ARC_LIFETIME_MS = 1000;
+  var arcLifetimeParam = Number(search.get("arcLifetimeMs"));
+  var ARC_LIFETIME_MS =
+    Number.isFinite(arcLifetimeParam) && arcLifetimeParam > 100 ? arcLifetimeParam : DEFAULT_ARC_LIFETIME_MS;
 
   function getColors() {
     return {
@@ -581,7 +585,6 @@
         sample20: arcSources.slice(0, 20),
       });
     }
-    var ARC_LIFETIME_MS = 2800;
     var EMIT_TICK_MS = 100;
     var MAX_EMITS_PER_TICK = 300;
     var liveArcs: Array<Arc & { expiresAt: number }> = [];
