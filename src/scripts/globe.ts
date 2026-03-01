@@ -202,7 +202,8 @@
   var search = new URLSearchParams(window.location.search);
   var DEBUG_NETWORK = search.get("debugNetwork") === "1" || search.get("debugnetwork") === "1";
   var VITE_RETRY_KEY = "network:globe-vite-retry";
-  var DEFAULT_ARC_LIFETIME_MS = 1000;
+  var ARC_ANIMATE_MS = 2200;
+  var DEFAULT_ARC_LIFETIME_MS = 3200;
   var arcLifetimeParam = Number(search.get("arcLifetimeMs"));
   var ARC_LIFETIME_MS =
     Number.isFinite(arcLifetimeParam) && arcLifetimeParam > 100 ? arcLifetimeParam : DEFAULT_ARC_LIFETIME_MS;
@@ -546,12 +547,12 @@
       .arcColor(function () {
         return [colors.arc, colors.arcAlt];
       })
-      .arcDashLength(0.4)
-      .arcDashGap(0.2)
+      .arcDashLength(1)
+      .arcDashGap(0)
       .arcDashInitialGap(function (d: any) {
         return d.dashGap;
       })
-      .arcDashAnimateTime(2500)
+      .arcDashAnimateTime(ARC_ANIMATE_MS)
       .arcStroke(0.3)
       .arcsTransitionDuration(0)(container);
 
@@ -590,8 +591,24 @@
     var liveArcs: Array<Arc & { expiresAt: number }> = [];
     var lastTickMs = Date.now();
 
-    globe.arcsData([]);
-    setArcCount(0);
+    // Warm start to near steady-state so arcs are visible immediately on page load.
+    var steadyStateSeconds = ARC_LIFETIME_MS / 1000;
+    for (var i = 0; i < arcSources.length; i++) {
+      var src = arcSources[i]!;
+      var expected = src.rps * steadyStateSeconds;
+      var whole = Math.floor(expected);
+      var frac = expected - whole;
+      var initial = whole + (Math.random() < frac ? 1 : 0);
+      for (var j = 0; j < initial; j++) {
+        var seeded = makeArcFromSource(src) as Arc & { expiresAt: number };
+        seeded.expiresAt = lastTickMs + Math.random() * ARC_LIFETIME_MS;
+        liveArcs.push(seeded);
+      }
+      src.carry = Math.random();
+    }
+
+    globe.arcsData(liveArcs.slice());
+    setArcCount(liveArcs.length);
 
     setInterval(function () {
       var nowMs = Date.now();
