@@ -29,7 +29,7 @@ export interface TrafficData {
 }
 
 interface GqlGroup {
-  dimensions: { clientCountry?: string; clientCountryName?: string };
+  dimensions: { clientCountryName?: string };
   count: number;
 }
 
@@ -44,7 +44,6 @@ query TrafficByCountry($zoneTag: string!, $since: Time!, $until: Time!) {
       ) {
         count
         dimensions {
-          clientCountry
           clientCountryName
         }
       }
@@ -88,11 +87,6 @@ function buildDisplayNameToCodeMap(): Map<string, string> {
 }
 
 function resolveCountryCode(dimensions: GqlGroup["dimensions"]): string | null {
-  const codeCandidate = dimensions.clientCountry?.trim().toUpperCase();
-  if (codeCandidate && COUNTRY_COORDS[codeCandidate]) {
-    return codeCandidate;
-  }
-
   const nameCandidate = dimensions.clientCountryName?.trim();
   if (!nameCandidate) return null;
 
@@ -147,7 +141,15 @@ async function queryZone(
     }),
   });
 
-  if (!res.ok) return [];
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    console.error("[network] zone query http error", {
+      zoneTag,
+      status: res.status,
+      body: body.slice(0, 500),
+    });
+    return [];
+  }
 
   const json = (await res.json()) as {
     data?: {
@@ -158,7 +160,13 @@ async function queryZone(
     errors?: { message: string }[];
   };
 
-  if (json.errors?.length) return [];
+  if (json.errors?.length) {
+    console.error("[network] zone query graphql error", {
+      zoneTag,
+      errors: json.errors.map((e) => e.message).slice(0, 5),
+    });
+  }
+
   return json.data?.viewer.zones[0]?.httpRequestsAdaptiveGroups ?? [];
 }
 
@@ -195,7 +203,7 @@ function aggregateGroups(allGroups: GqlGroup[]): {
       continue;
     }
 
-    const unresolvedKey = g.dimensions.clientCountryName ?? g.dimensions.clientCountry ?? "UNKNOWN";
+    const unresolvedKey = g.dimensions.clientCountryName ?? "UNKNOWN";
     unresolvedMap.set(unresolvedKey, (unresolvedMap.get(unresolvedKey) ?? 0) + g.count);
   }
 
