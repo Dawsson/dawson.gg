@@ -338,6 +338,8 @@
     lat: number;
     lng: number;
     weight: number;
+    rps: number;
+    carry: number;
     originLat: number;
     originLng: number;
   }
@@ -345,6 +347,7 @@
   function buildArcSources(data: TrafficData): ArcSource[] {
     var sources: ArcSource[] = [];
     var maxCountry = data.topCountries[0]?.requests ?? 1;
+    var windowSeconds = Math.max(1, data.windowHours * 3600);
 
     for (var i = 0; i < data.topCountries.length; i++) {
       var country = data.topCountries[i]!;
@@ -355,6 +358,8 @@
         lat: country.lat,
         lng: country.lng,
         weight: weight,
+        rps: country.requests / windowSeconds,
+        carry: 0,
         originLat: origin.lat,
         originLng: origin.lng,
       });
@@ -371,15 +376,6 @@
   function setArcCount(count: number) {
     var el = document.getElementById("net-arcs");
     if (el) el.textContent = count.toLocaleString();
-  }
-
-  /** Keep one live arc per source country, refreshing jitter over time. */
-  function nextArcForCountry(sources: ArcSource[], idx: number): Arc {
-    var src = sources[idx]!;
-    if (src) return makeArcFromSource(src);
-    var last = sources[sources.length - 1]!;
-    var jittered = jitter(last.lat, last.lng, JITTER[last.code] ?? DEFAULT_JITTER);
-    return makeArc(jittered[0], jittered[1], last.originLat, last.originLng, last.weight);
   }
 
   async function init() {
@@ -579,24 +575,49 @@
     if (DEBUG_NETWORK) {
       console.info("[network] arc sources", {
         total: arcSources.length,
+        totalRps: arcSources.reduce(function (sum, s) {
+          return sum + s.rps;
+        }, 0),
         sample20: arcSources.slice(0, 20),
       });
     }
-    var activeArcs: Arc[] = [];
-    for (var i = 0; i < arcSources.length; i++) {
-      activeArcs.push(nextArcForCountry(arcSources, i));
-    }
-    setArcCount(activeArcs.length);
-    globe.arcsData(activeArcs);
+    var ARC_LIFETIME_MS = 2800;
+    var EMIT_TICK_MS = 100;
+    var MAX_EMITS_PER_TICK = 300;
+    var liveArcs: Array<Arc & { expiresAt: number }> = [];
+    var lastTickMs = Date.now();
 
-    // Replace one country arc every 350ms to keep motion without dropping country coverage.
-    var replaceIdx = 0;
+    globe.arcsData([]);
+    setArcCount(0);
+
     setInterval(function () {
-      if (!arcSources.length) return;
-      activeArcs[replaceIdx] = nextArcForCountry(arcSources, replaceIdx);
-      replaceIdx = (replaceIdx + 1) % arcSources.length;
-      globe.arcsData(activeArcs.slice()); // shallow copy triggers update
-    }, 350);
+      var nowMs = Date.now();
+      var dtSeconds = Math.min((nowMs - lastTickMs) / 1000, 1);
+      lastTickMs = nowMs;
+
+      var emitted = 0;
+      for (var i = 0; i < arcSources.length; i++) {
+        var src = arcSources[i]!;
+        src.carry += src.rps * dtSeconds;
+
+        while (src.carry >= 1 && emitted < MAX_EMITS_PER_TICK) {
+          var arc = makeArcFromSource(src) as Arc & { expiresAt: number };
+          arc.expiresAt = nowMs + ARC_LIFETIME_MS;
+          liveArcs.push(arc);
+          src.carry -= 1;
+          emitted++;
+        }
+      }
+
+      if (liveArcs.length > 0) {
+        liveArcs = liveArcs.filter(function (a) {
+          return a.expiresAt > nowMs;
+        });
+      }
+
+      setArcCount(liveArcs.length);
+      globe.arcsData(liveArcs.slice());
+    }, EMIT_TICK_MS);
 
     // Resize — fill entire container
     function onResize() {
