@@ -247,6 +247,9 @@
       el.textContent = rps < 1 ? rps.toFixed(2) : Math.round(rps).toLocaleString();
     }
 
+    el = document.getElementById("net-arcs");
+    if (el) el.textContent = "0";
+
     // Populate country list
     var listEl = document.querySelector(".network-countries-list");
     if (listEl) {
@@ -359,23 +362,21 @@
     return sources;
   }
 
-  /** Pick one random arc from sources, weighted by traffic, with jitter */
-  function pickOne(sources: ArcSource[]): Arc {
-    var totalW = 0;
-    for (var i = 0; i < sources.length; i++) {
-      totalW += Math.pow(sources[i]!.weight, 0.4) + 0.1;
-    }
-    var r = Math.random() * totalW;
-    var cum = 0;
-    for (var i = 0; i < sources.length; i++) {
-      cum += Math.pow(sources[i]!.weight, 0.4) + 0.1;
-      if (cum >= r) {
-        var src = sources[i]!;
-        var radius = JITTER[src.code] ?? DEFAULT_JITTER;
-        var jittered = jitter(src.lat, src.lng, radius);
-        return makeArc(jittered[0], jittered[1], src.originLat, src.originLng, src.weight);
-      }
-    }
+  function makeArcFromSource(src: ArcSource): Arc {
+    var radius = JITTER[src.code] ?? DEFAULT_JITTER;
+    var jittered = jitter(src.lat, src.lng, radius);
+    return makeArc(jittered[0], jittered[1], src.originLat, src.originLng, src.weight);
+  }
+
+  function setArcCount(count: number) {
+    var el = document.getElementById("net-arcs");
+    if (el) el.textContent = count.toLocaleString();
+  }
+
+  /** Keep one live arc per source country, refreshing jitter over time. */
+  function nextArcForCountry(sources: ArcSource[], idx: number): Arc {
+    var src = sources[idx]!;
+    if (src) return makeArcFromSource(src);
     var last = sources[sources.length - 1]!;
     var jittered = jitter(last.lat, last.lng, JITTER[last.code] ?? DEFAULT_JITTER);
     return makeArc(jittered[0], jittered[1], last.originLat, last.originLng, last.weight);
@@ -576,22 +577,26 @@
     // Start with a full set, then replace ONE arc at a time on a fast interval
     var arcSources = buildArcSources(data);
     if (DEBUG_NETWORK) {
-      console.info("[network] arc sources", arcSources.slice(0, 20));
+      console.info("[network] arc sources", {
+        total: arcSources.length,
+        sample20: arcSources.slice(0, 20),
+      });
     }
-    var ARC_COUNT = 18;
     var activeArcs: Arc[] = [];
-    for (var i = 0; i < ARC_COUNT; i++) {
-      activeArcs.push(pickOne(arcSources));
+    for (var i = 0; i < arcSources.length; i++) {
+      activeArcs.push(nextArcForCountry(arcSources, i));
     }
+    setArcCount(activeArcs.length);
     globe.arcsData(activeArcs);
 
-    // Replace one arc every 800ms — no visible "reset"
+    // Replace one country arc every 350ms to keep motion without dropping country coverage.
     var replaceIdx = 0;
     setInterval(function () {
-      activeArcs[replaceIdx] = pickOne(arcSources);
-      replaceIdx = (replaceIdx + 1) % ARC_COUNT;
+      if (!arcSources.length) return;
+      activeArcs[replaceIdx] = nextArcForCountry(arcSources, replaceIdx);
+      replaceIdx = (replaceIdx + 1) % arcSources.length;
       globe.arcsData(activeArcs.slice()); // shallow copy triggers update
-    }, 800);
+    }, 350);
 
     // Resize — fill entire container
     function onResize() {
