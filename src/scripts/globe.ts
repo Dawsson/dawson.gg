@@ -200,6 +200,7 @@
 
   var isDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
   var DEBUG_NETWORK = new URLSearchParams(window.location.search).get("debugNetwork") === "1";
+  var VITE_RETRY_KEY = "network:globe-vite-retry";
 
   function getColors() {
     return {
@@ -227,6 +228,12 @@
     if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
     if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
     return n.toString();
+  }
+
+  function isOutdatedOptimizeDepError(err: unknown): boolean {
+    if (!err || typeof err !== "object") return false;
+    var message = "message" in err ? String((err as { message?: unknown }).message ?? "") : "";
+    return message.includes("Outdated Optimize Dep");
   }
 
   function populateStats(data: TrafficData) {
@@ -441,7 +448,15 @@
       ]);
       Globe = globeMod.default;
       topojson = topoMod;
-    } catch {
+      sessionStorage.removeItem(VITE_RETRY_KEY);
+    } catch (err) {
+      if (isOutdatedOptimizeDepError(err) && !sessionStorage.getItem(VITE_RETRY_KEY)) {
+        sessionStorage.setItem(VITE_RETRY_KEY, "1");
+        console.warn("[network] retrying after Vite outdated optimize dep");
+        window.location.reload();
+        return;
+      }
+
       if (msgEl) {
         msgEl.style.display = "";
         msgEl.textContent = "Failed to load globe";
