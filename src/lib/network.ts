@@ -59,10 +59,10 @@ const COUNTRY_NAME_ALIASES: Record<string, string> = {
   "GREAT BRITAIN": "GB",
   "SOUTH KOREA": "KR",
   "NORTH KOREA": "KP",
-  "RUSSIA": "RU",
+  RUSSIA: "RU",
   "RUSSIAN FEDERATION": "RU",
   "CZECH REPUBLIC": "CZ",
-  "UAE": "AE",
+  UAE: "AE",
   "HONG KONG SAR": "HK",
 };
 
