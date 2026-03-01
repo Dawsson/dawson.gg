@@ -316,6 +316,19 @@ export async function refreshTrafficData(env: Bindings): Promise<TrafficData> {
 
 export async function fetchTrafficData(env: Bindings): Promise<TrafficData> {
   const cached = await env.CACHE.get(CACHE_KEY);
-  if (cached) return JSON.parse(cached) as TrafficData;
+  if (cached) {
+    const parsed = JSON.parse(cached) as TrafficData;
+
+    // Avoid serving a stale "all-zero" snapshot for the full TTL after transient query failures.
+    if (parsed.topCountries.length > 0 || parsed.totalRequests > 0) {
+      return parsed;
+    }
+
+    const ageMs = Date.now() - new Date(parsed.updatedAt).getTime();
+    if (ageMs < 60_000) {
+      return parsed;
+    }
+  }
+
   return refreshTrafficData(env);
 }
