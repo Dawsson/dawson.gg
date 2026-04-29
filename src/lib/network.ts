@@ -267,6 +267,8 @@ export async function refreshTrafficData(env: Bindings): Promise<TrafficData> {
     { token, accountId: "3704af15f1156ed64a2150672c74248c" }, // Dawson
     { token, accountId: "5b8b7a9d1dc0cd18a49d3f56d1f8fcfb" }, // Flyte
     { token, accountId: "6b4865dd94efbedc2ea77b73bf89a5e8" }, // WIP
+    { token, accountId: "6689e70db2aaff6670c28b7e4d36df02" },
+    { token, accountId: "80f6cae423d945a7afc0a65f6f2a4cb4" },
   ];
 
   const now = new Date();
