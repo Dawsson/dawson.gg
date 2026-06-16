@@ -48,7 +48,6 @@
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--bg);
   text-rendering: optimizeLegibility;
 }
 
@@ -327,18 +326,20 @@ body.portfolio main {
 
 @media (max-width: 900px), (pointer: coarse) {
   body.portfolio {
-    display: block;
-    min-height: auto;
+    display: flex;
+    min-height: 100svh;
     padding-inline: 1rem;
     padding-bottom: max(env(safe-area-inset-bottom), 0.25rem);
   }
 
   body.portfolio main {
-    display: block;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
   }
 
   .section {
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
   }
 
   .github-header {
@@ -796,8 +797,8 @@ body.portfolio main {
 
 @media (max-width: 900px), (pointer: coarse) {
   .site-footer {
-    margin-top: 0;
-    padding-top: 1rem;
+    margin-top: auto;
+    padding-top: 1.25rem;
   }
 
   .footer-grid {
