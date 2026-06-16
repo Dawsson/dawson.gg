@@ -203,9 +203,18 @@ img {
 /* ─── Portfolio layout ─── */
 
 body.portfolio {
+  display: flex;
+  flex-direction: column;
   max-width: 960px;
+  min-height: 100vh;
   margin: 0 auto;
   padding: 2.5rem 1.5rem 4rem;
+}
+
+body.portfolio main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
 }
 
 .hero {
@@ -659,7 +668,7 @@ body.portfolio {
 }
 
 .site-footer {
-  margin-top: 6rem;
+  margin-top: auto;
   padding-top: 2rem;
   border-top: 1px solid var(--border);
 }
