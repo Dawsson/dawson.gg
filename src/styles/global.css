@@ -48,6 +48,7 @@
 html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: var(--bg);
   text-rendering: optimizeLegibility;
 }
 
@@ -206,7 +207,7 @@ body.portfolio {
   display: flex;
   flex-direction: column;
   max-width: 960px;
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   padding: 2.5rem 1.5rem 2rem;
 }
@@ -324,12 +325,12 @@ body.portfolio main {
   height: auto;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px), (pointer: coarse) {
   body.portfolio {
     display: block;
     min-height: auto;
     padding-inline: 1rem;
-    padding-bottom: 0.5rem;
+    padding-bottom: max(env(safe-area-inset-bottom), 0.25rem);
   }
 
   body.portfolio main {
@@ -337,7 +338,7 @@ body.portfolio main {
   }
 
   .section {
-    margin-bottom: 2.25rem;
+    margin-bottom: 1rem;
   }
 
   .github-header {
@@ -505,7 +506,7 @@ body.portfolio main {
   transform: translateX(3px);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px), (pointer: coarse) {
   .hero-top {
     align-items: baseline;
     flex-direction: row;
@@ -793,10 +794,10 @@ body.portfolio main {
   color: var(--accent);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px), (pointer: coarse) {
   .site-footer {
     margin-top: 0;
-    padding-top: 1.25rem;
+    padding-top: 1rem;
   }
 
   .footer-grid {
