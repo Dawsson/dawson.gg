@@ -326,7 +326,13 @@ body.portfolio main {
 
 @media (max-width: 640px) {
   body.portfolio {
-    padding-bottom: 1.25rem;
+    min-height: auto;
+    padding-inline: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  body.portfolio main {
+    flex: initial;
   }
 
   .github-header {
@@ -496,12 +502,18 @@ body.portfolio main {
 
 @media (max-width: 640px) {
   .hero-top {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.5rem;
+    align-items: baseline;
+    flex-direction: row;
+    gap: 0.75rem;
+  }
+
+  .hero-name {
+    font-size: clamp(2.75rem, 16vw, 3.5rem);
+    margin-bottom: 0.75rem;
   }
 
   .hero-network-cta {
+    font-size: 0.6875rem;
     transform: none;
   }
 }
@@ -773,6 +785,11 @@ body.portfolio main {
 }
 
 @media (max-width: 640px) {
+  .site-footer {
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+  }
+
   .footer-grid {
     flex-direction: column;
     gap: 1rem;
