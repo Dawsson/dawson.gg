@@ -214,6 +214,13 @@ body.portfolio {
   border-bottom: 1px solid var(--border);
 }
 
+.hero-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .hero-name {
   font-family: var(--font-display);
   font-size: 3.5rem;
@@ -222,6 +229,10 @@ body.portfolio {
   letter-spacing: -0.03em;
   line-height: 1.1;
   margin-bottom: 1rem;
+}
+
+.hero-network-cta {
+  transform: translateY(-0.25rem);
 }
 
 .hero-intro {
@@ -439,6 +450,18 @@ body.portfolio {
 }
 .network-cta:hover .network-cta-arrow {
   transform: translateX(3px);
+}
+
+@media (max-width: 640px) {
+  .hero-top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .hero-network-cta {
+    transform: none;
+  }
 }
 
 .tech-controls {

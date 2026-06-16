@@ -2,27 +2,27 @@
 import PortfolioLayout from "@/layouts/portfolio.astro";
 import Hero from "@/components/hero.astro";
 import GitHub from "@/components/github.astro";
-import Projects from "@/components/projects.astro";
-import Technologies from "@/components/technologies.astro";
-import RecentPosts from "@/components/recent-posts.astro";
+// import Projects from "@/components/projects.astro";
+// import Technologies from "@/components/technologies.astro";
+// import RecentPosts from "@/components/recent-posts.astro";
 import Footer from "@/components/footer.astro";
-import { fetchPublicNotes } from "@/lib/github.ts";
+// import { fetchPublicNotes } from "@/lib/github.ts";
 import { fetchContributions } from "@/lib/contributions.ts";
 import type { Bindings } from "@/lib/types.ts";
-import type { Note } from "@/lib/types.ts";
+// import type { Note } from "@/lib/types.ts";
 
 const env = Astro.locals.runtime.env as Bindings;
 
 // Fetch public notes with caching
-let notes: Note[];
-const cached = await env.CACHE.get("notes:public");
-if (cached) {
-  notes = JSON.parse(cached) as Note[];
-} else {
-  notes = await fetchPublicNotes(env);
-  await env.CACHE.put("notes:public", JSON.stringify(notes), { expirationTtl: 300 });
-}
-const recentNotes = notes.slice(0, 5);
+// let notes: Note[];
+// const cached = await env.CACHE.get("notes:public");
+// if (cached) {
+//   notes = JSON.parse(cached) as Note[];
+// } else {
+//   notes = await fetchPublicNotes(env);
+//   await env.CACHE.put("notes:public", JSON.stringify(notes), { expirationTtl: 300 });
+// }
+// const recentNotes = notes.slice(0, 5);
 
 let contribData;
 try {
@@ -35,8 +35,8 @@ try {
 <PortfolioLayout title="Dawson — Software Engineer">
   <Hero />
   {contribData && <GitHub data={contribData} />}
-  <Projects />
-  <Technologies />
-  <RecentPosts notes={recentNotes} />
+  {/* <Projects /> */}
+  {/* <Technologies /> */}
+  {/* <RecentPosts notes={recentNotes} /> */}
   <Footer />
 </PortfolioLayout>

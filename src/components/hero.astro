@@ -3,6 +3,13 @@ import { PROFILE } from "@/lib/data.ts";
 ---
 
 <section class="hero">
-  <h1 class="hero-name">{PROFILE.name}</h1>
+  <div class="hero-top">
+    <h1 class="hero-name">{PROFILE.name}</h1>
+    <a href="/network" class="network-cta hero-network-cta">
+      <span class="network-cta-dot"></span>
+      View live traffic
+      <span class="network-cta-arrow">&rarr;</span>
+    </a>
+  </div>
   <p class="hero-intro" set:html={PROFILE.intro} />
 </section>
