@@ -29,7 +29,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0c0a09;
+    --bg: #0b0a09;
     --bg-elevated: #1c1917;
     --bg-card: #1c1917;
     --text: #fafaf9;
