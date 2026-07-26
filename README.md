@@ -83,6 +83,9 @@ being attributed to Dawson. Once configured, other connected WHOOP members are a
 ignored. Accepted event references are retained in KV for 30 days; the webhook never contains the
 underlying health stats, which must be fetched separately through Dawson's OAuth grant.
 
+Hermes can read accepted event references from `GET /api/internal/whoop/events` using
+`HERMES_INTERNAL_TOKEN`.
+
 ## License
 
 MIT
