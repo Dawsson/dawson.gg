@@ -46,8 +46,10 @@ const site = await Astro("portfolio", {
       process.env.TELNYX_AI_ASSISTANT_ID ?? "assistant-721dd60e-fd64-41ae-8a5b-12b12387abd5",
     HERMES_INTERNAL_TOKEN: secret(process.env.HERMES_INTERNAL_TOKEN),
     TELNYX_AI_TOOL_TOKEN: secret(process.env.TELNYX_AI_TOOL_TOKEN),
-    WHOOP_CLIENT_SECRET: secret(process.env.WHOOP_CLIENT_SECRET),
-    WHOOP_USER_ID: secret(process.env.WHOOP_USER_ID),
+    ...(process.env.WHOOP_CLIENT_SECRET
+      ? { WHOOP_CLIENT_SECRET: secret(process.env.WHOOP_CLIENT_SECRET) }
+      : {}),
+    ...(process.env.WHOOP_USER_ID ? { WHOOP_USER_ID: secret(process.env.WHOOP_USER_ID) } : {}),
   },
   url: true,
 });
