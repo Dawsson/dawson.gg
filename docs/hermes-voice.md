@@ -11,7 +11,7 @@ Hermes creates a call:
 
 ```http
 POST /api/internal/briefing-sessions
-Authorization: Bearer HERMES_INTERNAL_WAKE_TOKEN
+Authorization: Bearer HERMES_INTERNAL_TOKEN
 Idempotency-Key: UUID
 Content-Type: application/json
 
@@ -40,13 +40,13 @@ Content-Type: application/json
 ```
 
 Allowed item kinds are `calendar`, `message`, `task`, `update`, `reminder`, and `other`. The
-destination is always `WAKEUP_TO_NUMBER`; the request cannot supply a phone number.
+destination is always `HERMES_TO_NUMBER`; the request cannot supply a phone number.
 
 Hermes reads the result using:
 
 ```http
 GET /api/internal/briefing-sessions/{id}
-Authorization: Bearer HERMES_INTERNAL_WAKE_TOKEN
+Authorization: Bearer HERMES_INTERNAL_TOKEN
 ```
 
 The response contains briefing items and the actions captured during the call. An action with
@@ -78,14 +78,13 @@ and configures the assistant as concise **Hermes Voice**. Audio recording remain
 ## Security and limitations
 
 - Telnyx Call Control webhooks use raw-body Ed25519 verification.
-- Hermes endpoints use `HERMES_INTERNAL_WAKE_TOKEN`.
+- Hermes endpoints use `HERMES_INTERNAL_TOKEN`.
 - MCP uses the separate `TELNYX_AI_TOOL_TOKEN`.
 - Calls always go to the configured fixed destination.
 - Voice records intent; Hermes executes external actions.
 - Exact content must be read back and explicitly confirmed before `send_reply` is approved.
 - D1 retains structured session state; audio recording is disabled.
-- The legacy wake endpoint remains available for simple escalation calls.
 
 Required environment variables are `TELNYX_API_KEY`, `TELNYX_PUBLIC_KEY`,
-`TELNYX_CONNECTION_ID`, `TELNYX_FROM_NUMBER`, `WAKEUP_TO_NUMBER`,
-`TELNYX_AI_ASSISTANT_ID`, `HERMES_INTERNAL_WAKE_TOKEN`, and `TELNYX_AI_TOOL_TOKEN`.
+`TELNYX_CONNECTION_ID`, `TELNYX_FROM_NUMBER`, `HERMES_TO_NUMBER`,
+`TELNYX_AI_ASSISTANT_ID`, `HERMES_INTERNAL_TOKEN`, and `TELNYX_AI_TOOL_TOKEN`.

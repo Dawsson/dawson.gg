@@ -1,15 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import {
-  initiateWakeUpCall,
-  initiateWakeTaskCall,
+  initiateVoiceSessionCall,
   parseTelnyxCallEvent,
-  speakWakeUpMessage,
-  startWakeAssistant,
+  startVoiceAssistant,
   verifyTelnyxWebhook,
-  WAKE_UP_MESSAGE,
 } from "../src/lib/telnyx";
 
-describe("Telnyx webhooks", () => {
+describe("Telnyx voice integration", () => {
   test("verifies a current Ed25519 signature over the raw body", async () => {
     const keyPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
     const rawBody = '{"data":{"id":"event-1","event_type":"call.answered","payload":{}}}';
@@ -48,51 +45,7 @@ describe("Telnyx webhooks", () => {
     expect(parseTelnyxCallEvent('{"data":{}}')).toBeNull();
   });
 
-  test("sends the wake-up message with an idempotent speak command", async () => {
-    let request: Request | undefined;
-    const fetcher = async (input: string | URL | Request, init?: RequestInit) => {
-      request = new Request(input, init);
-      return Response.json({ data: { result: "ok" } });
-    };
-
-    await speakWakeUpMessage("v3:call/id", "event-1", "secret", fetcher);
-
-    expect(request?.url).toEndWith("/calls/v3%3Acall%2Fid/actions/speak");
-    expect(request?.headers.get("Authorization")).toBe("Bearer secret");
-    expect(await request?.json()).toEqual({
-      payload: WAKE_UP_MESSAGE,
-      voice: "AWS.Polly.Joanna-Neural",
-      language: "en-US",
-      command_id: "event-1",
-    });
-  });
-
-  test("originates a call only when all internal configuration is present", async () => {
-    let body: unknown;
-    const fetcher = async (_input: string | URL | Request, init?: RequestInit) => {
-      body = JSON.parse(String(init?.body));
-      return Response.json({ data: { call_control_id: "v3:test" } });
-    };
-
-    await initiateWakeUpCall(
-      {
-        TELNYX_API_KEY: "secret",
-        TELNYX_CONNECTION_ID: "app-id",
-        TELNYX_FROM_NUMBER: "+13135550100",
-        WAKEUP_TO_NUMBER: "+13135550101",
-      },
-      fetcher,
-    );
-
-    expect(body).toMatchObject({
-      connection_id: "app-id",
-      from: "+13135550100",
-      to: "+13135550101",
-    });
-    expect(() => initiateWakeUpCall({}, fetcher)).toThrow("Missing required Telnyx configuration");
-  });
-
-  test("originates a correlated wake task and starts the configured assistant", async () => {
+  test("originates a correlated fixed-destination session and starts the assistant", async () => {
     const requests: Request[] = [];
     const fetcher = async (input: string | URL | Request, init?: RequestInit) => {
       const request = new Request(input, init);
@@ -108,54 +61,37 @@ describe("Telnyx webhooks", () => {
       TELNYX_API_KEY: "secret",
       TELNYX_CONNECTION_ID: "app-id",
       TELNYX_FROM_NUMBER: "+13135550100",
-      WAKEUP_TO_NUMBER: "+13135550101",
+      HERMES_TO_NUMBER: "+13135550101",
       TELNYX_AI_ASSISTANT_ID: "assistant-1",
     };
-    const task = {
-      id: "task-1",
-      maxDurationSeconds: 120,
-      goal: "Wake Dawson.",
-      successCondition: "Explicit confirmation.",
-      expiresAt: "2026-07-26T12:02:00Z",
-    };
+    const session = { id: "session-1", maxDurationSeconds: 300 };
 
-    expect(await initiateWakeTaskCall(env, task, fetcher)).toEqual({
+    expect(await initiateVoiceSessionCall(env, session, fetcher)).toEqual({
       callControlId: "v3:test",
       callSessionId: "session-1",
     });
-    const dialBody = await requests[0].json();
-    expect(dialBody).toMatchObject({
+    expect(await requests[0].json()).toMatchObject({
       to: "+13135550101",
-      command_id: "task-1",
-      time_limit_secs: 120,
+      command_id: "session-1",
+      time_limit_secs: 300,
     });
-    expect(dialBody.client_state).toBeString();
 
-    expect(await startWakeAssistant("v3:test", env, fetcher)).toBe("conversation-1");
-    const assistantBody = await requests[1].json();
-    expect(assistantBody).toEqual({
-      assistant: { id: "assistant-1" },
-    });
+    expect(await startVoiceAssistant("v3:test", env, fetcher)).toBe("conversation-1");
+    expect(await requests[1].json()).toEqual({ assistant: { id: "assistant-1" } });
   });
 
   test("includes sanitized Telnyx validation details without response bodies", async () => {
     const fetcher = async () =>
       Response.json(
         {
-          errors: [
-            {
-              code: "10015",
-              title: "Bad Request",
-              detail: "assistant is invalid",
-            },
-          ],
+          errors: [{ code: "10015", title: "Bad Request", detail: "assistant is invalid" }],
           secret: "must-not-leak",
         },
         { status: 422 },
       );
 
     await expect(
-      startWakeAssistant(
+      startVoiceAssistant(
         "v3:test",
         { TELNYX_API_KEY: "secret", TELNYX_AI_ASSISTANT_ID: "assistant-1" },
         fetcher,

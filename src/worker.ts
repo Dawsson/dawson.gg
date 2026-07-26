@@ -4,7 +4,7 @@ import { handle } from "@astrojs/cloudflare/handler";
 import { refreshContributions } from "./lib/contributions.ts";
 import { refreshTrafficData } from "./lib/network.ts";
 import type { Bindings } from "./lib/types.ts";
-import { cleanupWakeTasks } from "./lib/wake-tasks.ts";
+import { cleanupVoiceSessions } from "./lib/voice-sessions.ts";
 
 type Env = {
   [key: string]: unknown;
@@ -27,7 +27,7 @@ export function createExports(manifest: SSRManifest) {
           Promise.all([
             refreshContributions(env),
             refreshTrafficData(env),
-            cleanupWakeTasks(env.WAKE_DB),
+            cleanupVoiceSessions(env.VOICE_DB),
           ]),
         );
       },

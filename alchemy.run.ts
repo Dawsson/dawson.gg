@@ -11,8 +11,8 @@ const cache = await KVNamespace("portfolio-cache", {
   title: "portfolio-cache",
 });
 
-const wakeDb = await D1Database("portfolio-wake-tasks", {
-  name: "portfolio-wake-tasks",
+const voiceDb = await D1Database("portfolio-voice-sessions", {
+  name: "portfolio-voice-sessions",
   migrationsDir: "./migrations",
 });
 
@@ -30,7 +30,7 @@ const site = await Astro("portfolio", {
   bindings: {
     AI: ai,
     CACHE: cache,
-    WAKE_DB: wakeDb,
+    VOICE_DB: voiceDb,
     VECTORIZE: vectorIndex,
     GITHUB_TOKEN: secret(process.env.GITHUB_TOKEN),
     API_TOKEN: secret(process.env.API_TOKEN),
@@ -41,10 +41,10 @@ const site = await Astro("portfolio", {
     TELNYX_PUBLIC_KEY: secret(process.env.TELNYX_PUBLIC_KEY),
     TELNYX_CONNECTION_ID: secret(process.env.TELNYX_CONNECTION_ID),
     TELNYX_FROM_NUMBER: secret(process.env.TELNYX_FROM_NUMBER),
-    WAKEUP_TO_NUMBER: secret(process.env.WAKEUP_TO_NUMBER),
+    HERMES_TO_NUMBER: secret(process.env.HERMES_TO_NUMBER),
     TELNYX_AI_ASSISTANT_ID:
-      process.env.TELNYX_AI_ASSISTANT_ID ?? "assistant-1ed2ce2e-6d8e-4527-af37-4e801b5b6068",
-    HERMES_INTERNAL_WAKE_TOKEN: secret(process.env.HERMES_INTERNAL_WAKE_TOKEN),
+      process.env.TELNYX_AI_ASSISTANT_ID ?? "assistant-721dd60e-fd64-41ae-8a5b-12b12387abd5",
+    HERMES_INTERNAL_TOKEN: secret(process.env.HERMES_INTERNAL_TOKEN),
     TELNYX_AI_TOOL_TOKEN: secret(process.env.TELNYX_AI_TOOL_TOKEN),
   },
   url: true,

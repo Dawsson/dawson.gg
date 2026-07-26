@@ -6,6 +6,7 @@ import {
 } from "@/lib/briefing-sessions.ts";
 import { hasBearerToken } from "@/lib/internal-auth.ts";
 import type { Bindings } from "@/lib/types.ts";
+import { updateVoiceSession } from "@/lib/voice-sessions.ts";
 
 const tools = [
   {
@@ -92,7 +93,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const conversationId = body.params._meta?.telnyx_conversation_id;
   if (!conversationId) return rpc(body.id, toolResult({ error: "missing conversation" }, true));
-  const session = await getBriefingByConversationId(env.WAKE_DB, conversationId);
+  const session = await getBriefingByConversationId(env.VOICE_DB, conversationId);
   if (!session) return rpc(body.id, toolResult({ error: "briefing not found" }, true));
 
   if (body.params.name === "get_briefing") {
@@ -120,7 +121,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     ) {
       return rpc(body.id, toolResult({ error: "invalid action" }, true));
     }
-    const action = await addBriefingAction(env.WAKE_DB, session, {
+    const action = await addBriefingAction(env.VOICE_DB, session, {
       itemId: typeof args.item_id === "string" ? args.item_id.slice(0, 100) : undefined,
       type: type as "draft_reply",
       content,
@@ -139,7 +140,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   }
   if (body.params.name === "finish_briefing") {
-    await completeBriefing(env.WAKE_DB, session.task.id);
+    await completeBriefing(env.VOICE_DB, session.voiceSession.id);
+    await updateVoiceSession(env.VOICE_DB, session.voiceSession.id, { status: "completed" });
     return rpc(
       body.id,
       toolResult({

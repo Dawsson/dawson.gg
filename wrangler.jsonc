@@ -6,8 +6,8 @@
   "kv_namespaces": [{ "binding": "CACHE", "id": "placeholder" }],
   "d1_databases": [
     {
-      "binding": "WAKE_DB",
-      "database_name": "portfolio-wake-tasks",
+      "binding": "VOICE_DB",
+      "database_name": "portfolio-voice-sessions",
       "database_id": "placeholder",
       "migrations_dir": "migrations",
     },

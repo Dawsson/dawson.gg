@@ -34,7 +34,7 @@ bun run dev
 bun run deploy
 ```
 
-## Telnyx wake-up calls
+## Hermes voice briefings
 
 The Call Control webhook is:
 
@@ -53,14 +53,10 @@ Required deployment environment variables:
 - `TELNYX_PUBLIC_KEY` — the account webhook signing public key from **Keys & Credentials**.
 - `TELNYX_CONNECTION_ID` — the ID of the Call Control Application used to originate calls.
 - `TELNYX_FROM_NUMBER` — the Telnyx number assigned to the application, in E.164 format.
-- `WAKEUP_TO_NUMBER` — the destination number, in E.164 format.
+- `HERMES_TO_NUMBER` — the destination number, in E.164 format.
 
-`initiateWakeUpCall` in `src/lib/telnyx.ts` is the internal server-side entry point for starting a
-call. It is not exposed through an unauthenticated HTTP route. On `call.answered`, the webhook
-asks Telnyx to speak the configured wake-up message.
-
-The authenticated Hermes-to-AI wake workflow is documented in
-[`docs/telnyx-wake-agent.md`](docs/telnyx-wake-agent.md).
+The authenticated Hermes voice briefing workflow is documented in
+[`docs/hermes-voice.md`](docs/hermes-voice.md).
 
 For local webhook testing, run `bun run dev`, expose its HTTPS address with a tunnel such as
 Cloudflare Tunnel or ngrok, and temporarily set the Call Control Application webhook URL to:

@@ -1,15 +1,15 @@
 import type { APIRoute } from "astro";
 import { createBriefingSession, BRIEFING_ITEM_KINDS } from "@/lib/briefing-sessions.ts";
 import { hasBearerToken } from "@/lib/internal-auth.ts";
-import { initiateWakeTaskCall } from "@/lib/telnyx.ts";
+import { initiateVoiceSessionCall } from "@/lib/telnyx.ts";
 import type { Bindings } from "@/lib/types.ts";
-import { createWakeTask, publicWakeTask, updateWakeTask } from "@/lib/wake-tasks.ts";
+import { createVoiceSession, updateVoiceSession } from "@/lib/voice-sessions.ts";
 
 const IDEMPOTENCY_KEY = /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i;
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const env = locals.runtime.env as Bindings;
-  if (!(await hasBearerToken(request, env.HERMES_INTERNAL_WAKE_TOKEN))) {
+  if (!(await hasBearerToken(request, env.HERMES_INTERNAL_TOKEN))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
   const key = request.headers.get("Idempotency-Key");
@@ -68,33 +68,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
     Number(input.max_duration_seconds) <= 600
       ? Number(input.max_duration_seconds)
       : 300;
-  const { task, created } = await createWakeTask(
-    env.WAKE_DB,
-    {
-      type: "daily_wake",
-      severity: "low",
-      goal: `Conduct the briefing: ${input.title}`,
-      successCondition: "Complete the briefing and capture approved actions for Hermes.",
-      maxDurationSeconds,
-    },
-    key,
-  );
-  if (!created) return Response.json(publicWakeTask(task));
-  await createBriefingSession(env.WAKE_DB, task.id, input.title, items);
+  const { session, created } = await createVoiceSession(env.VOICE_DB, maxDurationSeconds, key);
+  if (!created) {
+    return Response.json({ id: session.id, status: session.status, item_count: items.length });
+  }
+  await createBriefingSession(env.VOICE_DB, session.id, input.title, items);
   try {
-    const call = await initiateWakeTaskCall(env, task);
-    const updated = await updateWakeTask(env.WAKE_DB, task.id, {
+    const call = await initiateVoiceSessionCall(env, session);
+    const updated = await updateVoiceSession(env.VOICE_DB, session.id, {
       status: "calling",
       telnyxCallControlId: call.callControlId,
       telnyxCallSessionId: call.callSessionId,
     });
     return Response.json(
-      { ...publicWakeTask(updated ?? task), item_count: items.length },
+      { id: session.id, status: updated?.status ?? session.status, item_count: items.length },
       { status: 201 },
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : "Briefing call failed";
-    await updateWakeTask(env.WAKE_DB, task.id, { status: "failed", error: message });
-    return Response.json({ error: "call failed", id: task.id }, { status: 502 });
+    await updateVoiceSession(env.VOICE_DB, session.id, { status: "failed", error: message });
+    return Response.json({ error: "call failed", id: session.id }, { status: 502 });
   }
 };

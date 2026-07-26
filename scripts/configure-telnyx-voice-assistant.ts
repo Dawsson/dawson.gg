@@ -1,7 +1,7 @@
 export {};
 
 const assistantId =
-  process.env.TELNYX_AI_ASSISTANT_ID ?? "assistant-1ed2ce2e-6d8e-4527-af37-4e801b5b6068";
+  process.env.TELNYX_AI_ASSISTANT_ID ?? "assistant-721dd60e-fd64-41ae-8a5b-12b12387abd5";
 const apiKey = process.env.TELNYX_API_KEY;
 const toolToken = process.env.TELNYX_AI_TOOL_TOKEN;
 if (!assistantId || !apiKey || !toolToken) {

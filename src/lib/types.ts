@@ -1,7 +1,7 @@
 export interface Bindings {
   AI: Ai;
   CACHE: KVNamespace;
-  WAKE_DB: D1Database;
+  VOICE_DB: D1Database;
   VECTORIZE: VectorizeIndex;
   GITHUB_TOKEN: string;
   GITHUB_REPO: string;
@@ -12,9 +12,9 @@ export interface Bindings {
   TELNYX_PUBLIC_KEY?: string;
   TELNYX_CONNECTION_ID?: string;
   TELNYX_FROM_NUMBER?: string;
-  WAKEUP_TO_NUMBER?: string;
+  HERMES_TO_NUMBER?: string;
   TELNYX_AI_ASSISTANT_ID?: string;
-  HERMES_INTERNAL_WAKE_TOKEN?: string;
+  HERMES_INTERNAL_TOKEN?: string;
   TELNYX_AI_TOOL_TOKEN?: string;
 }
 
