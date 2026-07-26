@@ -16,6 +16,8 @@ export interface Bindings {
   TELNYX_AI_ASSISTANT_ID?: string;
   HERMES_INTERNAL_TOKEN?: string;
   TELNYX_AI_TOOL_TOKEN?: string;
+  WHOOP_CLIENT_SECRET?: string;
+  WHOOP_USER_ID?: string;
 }
 
 export interface Note {

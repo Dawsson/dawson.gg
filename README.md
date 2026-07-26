@@ -68,6 +68,20 @@ https://YOUR-TUNNEL.example/api/telnyx/webhook
 Use the real `TELNYX_PUBLIC_KEY` locally to exercise signature verification. Telnyx webhook
 requests cannot be accurately signature-tested by editing or reserializing their JSON body.
 
+## WHOOP webhook
+
+WHOOP V2 events are received at:
+
+```text
+https://dawson.gg/api/whoop/webhook
+```
+
+The endpoint verifies `X-WHOOP-Signature` against the raw request body using
+`WHOOP_CLIENT_SECRET`, rejects stale signatures, and processes events only when `user_id` matches
+`WHOOP_USER_ID`. Other connected WHOOP members are acknowledged and ignored. Accepted event
+references are retained in KV for 30 days; the webhook never contains the underlying health stats,
+which must be fetched separately through Dawson's OAuth grant.
+
 ## License
 
 MIT
