@@ -1,6 +1,6 @@
 import type { APIRoute } from "astro";
 import type { Bindings } from "@/lib/types.ts";
-import { completeWhoopAuthorization } from "@/lib/whoop-oauth.ts";
+import { completeWhoopAuthorization, WhoopOAuthError } from "@/lib/whoop-oauth.ts";
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
@@ -19,8 +19,8 @@ export const GET: APIRoute = async ({ request, locals }) => {
       { headers: { "content-type": "text/html; charset=utf-8" } },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "WHOOP authorization failed";
-    console.error("WHOOP OAuth callback failed", { message });
-    return new Response("WHOOP authorization failed", { status: 400 });
+    const stage = error instanceof WhoopOAuthError ? error.stage : "unexpected";
+    console.error("WHOOP OAuth callback failed", { stage });
+    return new Response(`WHOOP authorization failed during ${stage}`, { status: 400 });
   }
 };

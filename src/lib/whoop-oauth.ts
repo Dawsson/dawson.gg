@@ -35,9 +35,23 @@ type WhoopOAuthEnv = Pick<
   "WHOOP_CLIENT_ID" | "WHOOP_CLIENT_SECRET" | "HERMES_INTERNAL_TOKEN"
 >;
 
+export class WhoopOAuthError extends Error {
+  constructor(
+    public readonly stage:
+      | "configuration"
+      | "state_validation"
+      | "token_exchange"
+      | "profile_fetch"
+      | "identity_check"
+      | "token_storage",
+  ) {
+    super(`WHOOP OAuth failed during ${stage}`);
+  }
+}
+
 function requireConfig(env: WhoopOAuthEnv) {
   if (!env.WHOOP_CLIENT_ID || !env.WHOOP_CLIENT_SECRET || !env.HERMES_INTERNAL_TOKEN) {
-    throw new Error("WHOOP OAuth is not configured");
+    throw new WhoopOAuthError("configuration");
   }
   return {
     clientId: env.WHOOP_CLIENT_ID,
@@ -141,24 +155,31 @@ export async function completeWhoopAuthorization(
 ): Promise<void> {
   const config = requireConfig(env);
   const stateKey = `whoop:oauth-state:${state}`;
-  if ((await cache.get(stateKey)) !== "pending") throw new Error("Invalid WHOOP OAuth state");
+  if ((await cache.get(stateKey)) !== "pending") {
+    throw new WhoopOAuthError("state_validation");
+  }
   await cache.delete(stateKey);
 
-  const tokens = await tokenRequest(
-    new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      redirect_uri: REDIRECT_URI,
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-    }),
-  );
-  if (!tokens.access_token) throw new Error("WHOOP access token is missing");
+  let tokens: WhoopTokenResponse;
+  try {
+    tokens = await tokenRequest(
+      new URLSearchParams({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: REDIRECT_URI,
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+      }),
+    );
+  } catch {
+    throw new WhoopOAuthError("token_exchange");
+  }
+  if (!tokens.access_token) throw new WhoopOAuthError("token_exchange");
   const profileResponse = await fetch(`${WHOOP_API_BASE}/user/profile/basic`, {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
   });
   if (!profileResponse.ok) {
-    throw new Error(`WHOOP profile request failed with status ${profileResponse.status}`);
+    throw new WhoopOAuthError("profile_fetch");
   }
   const profile = (await profileResponse.json()) as {
     user_id?: number | string;
@@ -167,10 +188,14 @@ export async function completeWhoopAuthorization(
   };
   const profileId = String(profile.user_id ?? profile.id ?? "");
   if (profile.email?.toLowerCase() !== "hello@dawson.gg" || !/^\d+$/.test(profileId)) {
-    throw new Error("WHOOP profile does not match Dawson");
+    throw new WhoopOAuthError("identity_check");
   }
-  await storeTokens(cache, tokens, config.encryptionSecret);
-  await cache.put(WHOOP_AUTHORIZED_USER_KEY, profileId);
+  try {
+    await storeTokens(cache, tokens, config.encryptionSecret);
+    await cache.put(WHOOP_AUTHORIZED_USER_KEY, profileId);
+  } catch {
+    throw new WhoopOAuthError("token_storage");
+  }
 }
 
 async function accessToken(cache: KVNamespace, env: WhoopOAuthEnv): Promise<string | null> {
