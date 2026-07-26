@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { parseWhoopWebhook, verifyWhoopWebhook } from "@/lib/whoop.ts";
 import type { Bindings } from "@/lib/types.ts";
+import { WHOOP_AUTHORIZED_USER_KEY } from "@/lib/whoop-oauth.ts";
 
 const EVENT_TTL_SECONDS = 30 * 24 * 60 * 60;
 
@@ -23,7 +24,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const event = parseWhoopWebhook(rawBody);
   if (!event) return new Response("Invalid webhook payload", { status: 400 });
 
-  if (!env.WHOOP_USER_ID) {
+  const authorizedUserId = (await env.CACHE.get(WHOOP_AUTHORIZED_USER_KEY)) ?? env.WHOOP_USER_ID;
+  if (!authorizedUserId) {
     console.info("WHOOP unmatched event", { eventType: event.type, traceId: event.traceId });
     locals.runtime.ctx.waitUntil(
       env.CACHE.put(
@@ -40,7 +42,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(null, { status: 204 });
   }
 
-  if (event.userId !== env.WHOOP_USER_ID) return new Response(null, { status: 204 });
+  if (event.userId !== authorizedUserId) return new Response(null, { status: 204 });
 
   console.info("WHOOP event", { eventType: event.type, traceId: event.traceId });
   locals.runtime.ctx.waitUntil(

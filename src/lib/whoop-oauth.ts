@@ -4,6 +4,7 @@ const WHOOP_AUTH_URL = "https://api.prod.whoop.com/oauth/oauth2/auth";
 const WHOOP_TOKEN_URL = "https://api.prod.whoop.com/oauth/oauth2/token";
 const WHOOP_API_BASE = "https://api.prod.whoop.com/developer/v2";
 const TOKEN_KEY = "whoop:oauth:tokens";
+export const WHOOP_AUTHORIZED_USER_KEY = "whoop:oauth:user-id";
 const REDIRECT_URI = "https://dawson.gg/api/whoop/callback";
 const SCOPES = [
   "offline",
@@ -31,22 +32,16 @@ type StoredTokens = {
 
 type WhoopOAuthEnv = Pick<
   Bindings,
-  "WHOOP_CLIENT_ID" | "WHOOP_CLIENT_SECRET" | "WHOOP_USER_ID" | "HERMES_INTERNAL_TOKEN"
+  "WHOOP_CLIENT_ID" | "WHOOP_CLIENT_SECRET" | "HERMES_INTERNAL_TOKEN"
 >;
 
 function requireConfig(env: WhoopOAuthEnv) {
-  if (
-    !env.WHOOP_CLIENT_ID ||
-    !env.WHOOP_CLIENT_SECRET ||
-    !env.WHOOP_USER_ID ||
-    !env.HERMES_INTERNAL_TOKEN
-  ) {
+  if (!env.WHOOP_CLIENT_ID || !env.WHOOP_CLIENT_SECRET || !env.HERMES_INTERNAL_TOKEN) {
     throw new Error("WHOOP OAuth is not configured");
   }
   return {
     clientId: env.WHOOP_CLIENT_ID,
     clientSecret: env.WHOOP_CLIENT_SECRET,
-    userId: env.WHOOP_USER_ID,
     encryptionSecret: `${env.WHOOP_CLIENT_SECRET}:${env.HERMES_INTERNAL_TOKEN}:whoop-oauth-v1`,
   };
 }
@@ -171,10 +166,11 @@ export async function completeWhoopAuthorization(
     email?: string;
   };
   const profileId = String(profile.user_id ?? profile.id ?? "");
-  if (profile.email?.toLowerCase() !== "hello@dawson.gg" || profileId !== config.userId) {
+  if (profile.email?.toLowerCase() !== "hello@dawson.gg" || !/^\d+$/.test(profileId)) {
     throw new Error("WHOOP profile does not match Dawson");
   }
   await storeTokens(cache, tokens, config.encryptionSecret);
+  await cache.put(WHOOP_AUTHORIZED_USER_KEY, profileId);
 }
 
 async function accessToken(cache: KVNamespace, env: WhoopOAuthEnv): Promise<string | null> {
