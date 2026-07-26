@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
   initiateWakeUpCall,
+  initiateWakeTaskCall,
   parseTelnyxCallEvent,
   speakWakeUpMessage,
+  startWakeAssistant,
   verifyTelnyxWebhook,
   WAKE_UP_MESSAGE,
 } from "../src/lib/telnyx";
@@ -88,5 +90,56 @@ describe("Telnyx webhooks", () => {
       to: "+13135550101",
     });
     expect(() => initiateWakeUpCall({}, fetcher)).toThrow("Missing required Telnyx configuration");
+  });
+
+  test("originates a correlated wake task and starts the configured assistant", async () => {
+    const requests: Request[] = [];
+    const fetcher = async (input: string | URL | Request, init?: RequestInit) => {
+      const request = new Request(input, init);
+      requests.push(request);
+      if (request.url.endsWith("/calls")) {
+        return Response.json({
+          data: { call_control_id: "v3:test", call_session_id: "session-1" },
+        });
+      }
+      return Response.json({ data: { result: "ok", conversation_id: "conversation-1" } });
+    };
+    const env = {
+      TELNYX_API_KEY: "secret",
+      TELNYX_CONNECTION_ID: "app-id",
+      TELNYX_FROM_NUMBER: "+13135550100",
+      WAKEUP_TO_NUMBER: "+13135550101",
+      TELNYX_AI_ASSISTANT_ID: "assistant-1",
+    };
+    const task = {
+      id: "task-1",
+      maxDurationSeconds: 120,
+      goal: "Wake Dawson.",
+      successCondition: "Explicit confirmation.",
+      expiresAt: "2026-07-26T12:02:00Z",
+    };
+
+    expect(await initiateWakeTaskCall(env, task, fetcher)).toEqual({
+      callControlId: "v3:test",
+      callSessionId: "session-1",
+    });
+    const dialBody = await requests[0].json();
+    expect(dialBody).toMatchObject({
+      to: "+13135550101",
+      command_id: "task-1",
+      time_limit_secs: 120,
+    });
+    expect(dialBody.client_state).toBeString();
+
+    expect(await startWakeAssistant("v3:test", "event-1", task as never, env, fetcher)).toBe(
+      "conversation-1",
+    );
+    const assistantBody = await requests[1].json();
+    expect(assistantBody).toMatchObject({
+      assistant: { id: "assistant-1" },
+      send_message_history_updates: true,
+      command_id: "event-1",
+    });
+    expect(JSON.stringify(assistantBody.message_history)).toContain("task-1");
   });
 });

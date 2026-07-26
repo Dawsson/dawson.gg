@@ -4,6 +4,14 @@
   "name": "portfolio",
   "compatibility_date": "2025-02-04",
   "kv_namespaces": [{ "binding": "CACHE", "id": "placeholder" }],
+  "d1_databases": [
+    {
+      "binding": "WAKE_DB",
+      "database_name": "portfolio-wake-tasks",
+      "database_id": "placeholder",
+      "migrations_dir": "migrations",
+    },
+  ],
   "vectorize": [{ "binding": "VECTORIZE", "index_name": "portfolio-search" }],
   "ai": { "binding": "AI" },
 }

@@ -1,4 +1,5 @@
 import type { Bindings } from "./types.ts";
+import type { WakeTask } from "./wake-tasks.ts";
 
 export const WAKE_UP_MESSAGE = "Dawson, wake up. Reply awake to Hermes so I know you are up.";
 
@@ -21,6 +22,11 @@ export interface TelnyxCallEvent {
 }
 
 type Fetch = typeof fetch;
+
+export interface WakeClientState {
+  version: 1;
+  wakeTaskId: string;
+}
 
 function decodeBase64(value: string): ArrayBuffer {
   const binary = atob(value);
@@ -130,6 +136,30 @@ async function telnyxRequest(
   return response.json();
 }
 
+async function telnyxGet(path: string, apiKey: string, fetcher: Fetch): Promise<unknown> {
+  const response = await fetcher(`${TELNYX_API_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${apiKey}` },
+  });
+  if (!response.ok) throw new Error(`Telnyx API request failed with status ${response.status}`);
+  return response.json();
+}
+
+export function encodeWakeClientState(taskId: string): string {
+  return btoa(JSON.stringify({ version: 1, wakeTaskId: taskId } satisfies WakeClientState));
+}
+
+export function decodeWakeClientState(value: unknown): WakeClientState | null {
+  if (typeof value !== "string") return null;
+  try {
+    const parsed = JSON.parse(atob(value)) as Partial<WakeClientState>;
+    return parsed.version === 1 && typeof parsed.wakeTaskId === "string"
+      ? { version: 1, wakeTaskId: parsed.wakeTaskId }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 export function speakWakeUpMessage(
   callControlId: string,
   eventId: string,
@@ -184,4 +214,100 @@ export function initiateWakeUpCall(
     },
     fetcher,
   );
+}
+
+export async function initiateWakeTaskCall(
+  env: Pick<
+    Bindings,
+    "TELNYX_API_KEY" | "TELNYX_CONNECTION_ID" | "TELNYX_FROM_NUMBER" | "WAKEUP_TO_NUMBER"
+  >,
+  task: Pick<WakeTask, "id" | "maxDurationSeconds">,
+  fetcher: Fetch = fetch,
+): Promise<{
+  callControlId: string;
+  callSessionId: string;
+}> {
+  const required = {
+    TELNYX_API_KEY: env.TELNYX_API_KEY,
+    TELNYX_CONNECTION_ID: env.TELNYX_CONNECTION_ID,
+    TELNYX_FROM_NUMBER: env.TELNYX_FROM_NUMBER,
+    WAKEUP_TO_NUMBER: env.WAKEUP_TO_NUMBER,
+  };
+  const missing = Object.entries(required)
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+  if (missing.length > 0) {
+    throw new Error(`Missing required Telnyx configuration: ${missing.join(", ")}`);
+  }
+  const response = (await telnyxRequest(
+    "/calls",
+    required.TELNYX_API_KEY!,
+    {
+      connection_id: required.TELNYX_CONNECTION_ID,
+      from: required.TELNYX_FROM_NUMBER,
+      to: required.WAKEUP_TO_NUMBER,
+      command_id: task.id,
+      client_state: encodeWakeClientState(task.id),
+      time_limit_secs: task.maxDurationSeconds,
+    },
+    fetcher,
+  )) as { data?: { call_control_id?: string; call_session_id?: string } };
+  if (!response.data?.call_control_id || !response.data.call_session_id) {
+    throw new Error("Telnyx dial response did not include call identifiers");
+  }
+  return {
+    callControlId: response.data.call_control_id,
+    callSessionId: response.data.call_session_id,
+  };
+}
+
+export async function startWakeAssistant(
+  callControlId: string,
+  eventId: string,
+  task: WakeTask,
+  env: Pick<Bindings, "TELNYX_API_KEY" | "TELNYX_AI_ASSISTANT_ID">,
+  fetcher: Fetch = fetch,
+): Promise<string> {
+  if (!env.TELNYX_API_KEY || !env.TELNYX_AI_ASSISTANT_ID) {
+    throw new Error("Missing required Telnyx AI Assistant configuration");
+  }
+  const response = (await telnyxRequest(
+    `/calls/${encodeURIComponent(callControlId)}/actions/ai_assistant_start`,
+    env.TELNYX_API_KEY,
+    {
+      assistant: { id: env.TELNYX_AI_ASSISTANT_ID },
+      message_history: [
+        {
+          role: "developer",
+          content: JSON.stringify({
+            wake_task_id: task.id,
+            goal: task.goal,
+            success_condition: task.successCondition,
+            expires_at: task.expiresAt,
+          }),
+        },
+      ],
+      send_message_history_updates: true,
+      client_state: encodeWakeClientState(task.id),
+      command_id: eventId,
+    },
+    fetcher,
+  )) as { data?: { conversation_id?: string } };
+  if (!response.data?.conversation_id) {
+    throw new Error("Telnyx AI Assistant response did not include a conversation ID");
+  }
+  return response.data.conversation_id;
+}
+
+export async function fetchConversationMessages(
+  conversationId: string,
+  apiKey: string,
+  fetcher: Fetch = fetch,
+): Promise<Array<{ role?: string; content?: unknown }>> {
+  const response = (await telnyxGet(
+    `/ai/conversations/${encodeURIComponent(conversationId)}/messages`,
+    apiKey,
+    fetcher,
+  )) as { data?: Array<{ role?: string; content?: unknown }> };
+  return Array.isArray(response.data) ? response.data : [];
 }

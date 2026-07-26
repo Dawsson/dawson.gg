@@ -59,6 +59,9 @@ Required deployment environment variables:
 call. It is not exposed through an unauthenticated HTTP route. On `call.answered`, the webhook
 asks Telnyx to speak the configured wake-up message.
 
+The authenticated Hermes-to-AI wake workflow is documented in
+[`docs/telnyx-wake-agent.md`](docs/telnyx-wake-agent.md).
+
 For local webhook testing, run `bun run dev`, expose its HTTPS address with a tunnel such as
 Cloudflare Tunnel or ngrok, and temporarily set the Call Control Application webhook URL to:
 

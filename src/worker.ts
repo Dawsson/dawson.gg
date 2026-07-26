@@ -4,6 +4,7 @@ import { handle } from "@astrojs/cloudflare/handler";
 import { refreshContributions } from "./lib/contributions.ts";
 import { refreshTrafficData } from "./lib/network.ts";
 import type { Bindings } from "./lib/types.ts";
+import { cleanupWakeTasks } from "./lib/wake-tasks.ts";
 
 type Env = {
   [key: string]: unknown;
@@ -22,7 +23,13 @@ export function createExports(manifest: SSRManifest) {
       },
 
       async scheduled(_event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) {
-        ctx.waitUntil(Promise.all([refreshContributions(env), refreshTrafficData(env)]));
+        ctx.waitUntil(
+          Promise.all([
+            refreshContributions(env),
+            refreshTrafficData(env),
+            cleanupWakeTasks(env.WAKE_DB),
+          ]),
+        );
       },
     },
   };
