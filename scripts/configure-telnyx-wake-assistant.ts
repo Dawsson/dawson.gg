@@ -8,94 +8,87 @@ if (!assistantId || !apiKey || !toolToken) {
   throw new Error("TELNYX_AI_ASSISTANT_ID, TELNYX_API_KEY, and TELNYX_AI_TOOL_TOKEN are required");
 }
 
-const assistantResponse = await fetch(
-  `https://api.telnyx.com/v2/ai/assistants/${encodeURIComponent(assistantId)}`,
-  { headers: { Authorization: `Bearer ${apiKey}` } },
-);
-if (!assistantResponse.ok) {
-  throw new Error(`Telnyx assistant retrieval failed with status ${assistantResponse.status}`);
-}
-const assistant = (await assistantResponse.json()) as {
-  tools?: Array<{ type?: string; [key: string]: unknown }>;
-  telephony_settings?: Record<string, unknown>;
-  privacy_settings?: Record<string, unknown>;
+const headers = {
+  Authorization: `Bearer ${apiKey}`,
+  "Content-Type": "application/json",
 };
-const hasWakeTool = (assistant.tools ?? []).some(
-  (tool) =>
-    tool.type === "webhook" &&
-    (tool as { webhook?: { name?: string } }).webhook?.name === "report_wake_status",
-);
-const wakeTool = {
-  type: "webhook",
-  webhook: {
-    name: "report_wake_status",
-    description:
-      "Report whether Dawson explicitly confirmed he is awake and getting up. Use the wake_task_id from developer context.",
-    url: "https://dawson.gg/api/telnyx/ai-tools/report-wake-status",
-    method: "POST",
-    headers: [
-      { name: "Authorization", value: `Bearer ${toolToken}` },
-      { name: "Content-Type", value: "application/json" },
-    ],
-    body_parameters: {
-      type: "object",
-      properties: {
-        task_id: { type: "string", description: "The wake_task_id from developer context." },
-        status: {
-          type: "string",
-          enum: ["awake_confirmed", "not_confirmed", "unclear"],
-        },
-        confidence: { type: "number", minimum: 0, maximum: 1 },
-        summary: { type: "string" },
-        evidence: {
-          type: "string",
-          description: "The exact words Dawson used as evidence for the status.",
-        },
-      },
-      required: ["task_id", "status", "confidence", "summary", "evidence"],
-    },
-  },
+const request = async (path: string, init?: RequestInit) => {
+  const response = await fetch(`https://api.telnyx.com/v2${path}`, { ...init, headers });
+  if (!response.ok) {
+    const detail = (await response.text())
+      .replaceAll(apiKey, "[REDACTED]")
+      .replaceAll(toolToken, "[REDACTED]")
+      .slice(0, 1000);
+    throw new Error(`Telnyx ${path} failed with status ${response.status}: ${detail}`);
+  }
+  return response.json() as Promise<Record<string, unknown>>;
 };
 
-const updateResponse = await fetch(
-  `https://api.telnyx.com/v2/ai/assistants/${encodeURIComponent(assistantId)}`,
-  {
+const secretIdentifier = "hermes_briefing_mcp";
+const secretList = await request("/integration_secrets");
+const secrets = (secretList.data ?? []) as Array<{ identifier?: string }>;
+if (!secrets.some((secret) => secret.identifier === secretIdentifier)) {
+  await request("/integration_secrets", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify({
-      name: "Hermes Wake Voice",
-      model: "moonshotai/Kimi-K2.6",
-      greeting: "Dawson, this is your wake-up assistant. Please say: I am awake and getting up.",
-      instructions:
-        "You are Dawson's wake-up assistant. Your only job is to determine whether Dawson is actually awake. Be concise, firm, and friendly. Read the wake_task_id, goal, success_condition, and expires_at from developer context. Ask Dawson to explicitly say: I am awake and getting up. Do not treat silence, mumbling, voicemail, jokes, or vague answers as confirmation. If Dawson explicitly confirms he is awake and getting up, call report_wake_status with awake_confirmed and quote his exact words as evidence. Otherwise call report_wake_status with not_confirmed or unclear. Call the tool exactly once, then use the Hang Up tool. Keep the call under two minutes.",
-      ...(hasWakeTool ? {} : { tools: [wakeTool] }),
-      telephony_settings: {
-        ...assistant.telephony_settings,
-        time_limit_secs: 120,
-        send_conversation_message_events: true,
-        recording_settings: {
-          enabled: false,
-          channels: "dual",
-          format: "mp3",
-          stop_on_conversation_end: true,
-        },
-      },
-      privacy_settings: {
-        ...assistant.privacy_settings,
-        data_retention: true,
-      },
+      identifier: secretIdentifier,
+      type: "bearer",
+      token: toolToken,
     }),
-  },
-);
-if (!updateResponse.ok) {
-  const details = (await updateResponse.text())
-    .replaceAll(apiKey, "[REDACTED]")
-    .replaceAll(toolToken, "[REDACTED]");
-  throw new Error(
-    `Telnyx assistant update failed with status ${updateResponse.status}: ${details.slice(0, 1000)}`,
-  );
+  });
 }
-console.log("Configured Telnyx assistant for wake confirmation.");
+
+const mcpList = await request("/ai/mcp_servers");
+const mcpServers = (Array.isArray(mcpList) ? mcpList : (mcpList.data ?? [])) as Array<{
+  id?: string;
+  name?: string;
+  url?: string;
+}>;
+let mcpServer = mcpServers.find(
+  (server) =>
+    server.name === "Hermes Briefing" || server.url === "https://dawson.gg/api/telnyx/mcp",
+);
+if (!mcpServer?.id) {
+  mcpServer = (await request("/ai/mcp_servers", {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Hermes Briefing",
+      type: "http",
+      url: "https://dawson.gg/api/telnyx/mcp",
+      api_key_ref: secretIdentifier,
+      allowed_tools: ["get_briefing", "record_action", "finish_briefing"],
+    }),
+  })) as typeof mcpServer;
+}
+if (!mcpServer?.id) throw new Error("Telnyx MCP server response did not include an id");
+
+const assistant = await request(`/ai/assistants/${encodeURIComponent(assistantId)}`);
+await request(`/ai/assistants/${encodeURIComponent(assistantId)}`, {
+  method: "POST",
+  body: JSON.stringify({
+    name: "Hermes Voice",
+    model: "moonshotai/Kimi-K2.6",
+    greeting:
+      "Good morning, Dawson. I have your briefing ready. Would you like the quick version or to go through it together?",
+    instructions:
+      "You are Hermes Voice, Dawson's concise personal briefing assistant. You are warm, capable, and direct, never repetitive or nagging. Start by calling get_briefing. Give a short overview, then discuss one item at a time. Dawson may ask for details, skip, defer, take notes, draft replies, request suggestions, revise drafts, or approve actions. Use record_action for every draft or instruction Hermes should receive. Never mark a send_reply or other external action approved until you read back the exact content and Dawson clearly confirms it; vague agreement is not confirmation. You never execute messages yourself. Before ending, summarize approved actions and unresolved items, call finish_briefing, then hang up. Keep answers voice-friendly and brief.",
+    mcp_servers: [{ id: mcpServer.id }],
+    telephony_settings: {
+      ...(assistant.telephony_settings as Record<string, unknown>),
+      time_limit_secs: 600,
+      send_conversation_message_events: true,
+      recording_settings: {
+        enabled: false,
+        channels: "dual",
+        format: "mp3",
+        stop_on_conversation_end: true,
+      },
+    },
+    privacy_settings: {
+      ...(assistant.privacy_settings as Record<string, unknown>),
+      data_retention: true,
+    },
+  }),
+});
+
+console.log("Configured Telnyx Hermes Voice assistant and authenticated briefing MCP server.");

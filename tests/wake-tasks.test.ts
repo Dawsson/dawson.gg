@@ -1,8 +1,15 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { Miniflare } from "miniflare";
 import { hasBearerToken } from "../src/lib/internal-auth";
+import {
+  createBriefingSession,
+  getBriefingSession,
+  type BriefingItem,
+} from "../src/lib/briefing-sessions";
 import { POST as createWakeTaskRoute } from "../src/pages/api/internal/wake-tasks/index";
+import { POST as createBriefingRoute } from "../src/pages/api/internal/briefing-sessions/index";
 import { POST as reportWakeStatusRoute } from "../src/pages/api/telnyx/ai-tools/report-wake-status";
+import { POST as mcpRoute } from "../src/pages/api/telnyx/mcp";
 import {
   classifyConversationMessages,
   createWakeTask,
@@ -25,6 +32,9 @@ beforeAll(async () => {
   db = await miniflare.getD1Database("WAKE_DB");
   await db.exec(
     (await Bun.file("migrations/0001_wake_tasks.sql").text()).replace(/\s*\n\s*/g, " "),
+  );
+  await db.exec(
+    (await Bun.file("migrations/0002_briefing_sessions.sql").text()).replace(/\s*\n\s*/g, " "),
   );
 });
 
@@ -75,6 +85,20 @@ describe("wake task bridge", () => {
       locals: { runtime: { env: { WAKE_DB: db, HERMES_INTERNAL_WAKE_TOKEN: "secret" } } },
     } as never);
     expect(response.status).toBe(400);
+
+    const briefingResponse = await createBriefingRoute({
+      request: new Request("https://example.com/api/internal/briefing-sessions", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer secret",
+          "Idempotency-Key": crypto.randomUUID(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title: "Morning", items: [], to: "+13135550199" }),
+      }),
+      locals: { runtime: { env: { WAKE_DB: db, HERMES_INTERNAL_WAKE_TOKEN: "secret" } } },
+    } as never);
+    expect(briefingResponse.status).toBe(400);
   });
 
   test("creates durable idempotent task state and records events once", async () => {
@@ -167,5 +191,67 @@ describe("wake task bridge", () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ ok: true, status: "unclear" });
     expect((await getWakeTask(db, created.task.id))?.status).toBe("not_confirmed");
+  });
+
+  test("MCP resolves a briefing from Telnyx-controlled conversation metadata", async () => {
+    const created = await createWakeTask(
+      db,
+      {
+        type: "daily_wake",
+        severity: "low",
+        goal: "Morning briefing.",
+        successCondition: "Capture actions.",
+        maxDurationSeconds: 300,
+      },
+      "request-briefing",
+    );
+    const items: BriefingItem[] = [
+      {
+        id: "meeting-1",
+        kind: "calendar",
+        title: "Team meeting",
+        summary: "Starts at 10 AM.",
+      },
+    ];
+    await createBriefingSession(db, created.task.id, "Morning briefing", items);
+    await updateWakeTask(db, created.task.id, {
+      status: "in_progress",
+      telnyxConversationId: "conversation-1",
+    });
+
+    const call = async (name: string, args: Record<string, unknown> = {}) =>
+      mcpRoute({
+        request: new Request("https://example.com/api/telnyx/mcp", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer tool-secret",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: crypto.randomUUID(),
+            method: "tools/call",
+            params: {
+              name,
+              arguments: args,
+              _meta: { telnyx_conversation_id: "conversation-1" },
+            },
+          }),
+        }),
+        locals: { runtime: { env: { WAKE_DB: db, TELNYX_AI_TOOL_TOKEN: "tool-secret" } } },
+      } as never);
+
+    const briefing = await call("get_briefing");
+    expect(JSON.stringify(await briefing.json())).toContain("Team meeting");
+
+    await call("record_action", {
+      item_id: "meeting-1",
+      type: "create_reminder",
+      content: "Remind me at 9:45 AM.",
+      status: "approved",
+    });
+    const session = await getBriefingSession(db, (await getWakeTask(db, created.task.id))!);
+    expect(session?.actions).toHaveLength(1);
+    expect(session?.actions[0]?.status).toBe("approved");
   });
 });

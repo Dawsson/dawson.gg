@@ -1,52 +1,91 @@
-# Telnyx wake-agent bridge
+# Hermes voice briefing bridge
 
-Hermes is the decision engine. `dawson.gg` owns task state, call origination, signed Telnyx
-webhooks, AI Assistant startup, and the assistant's status-report tool. Telnyx conducts the
-conversation.
+Hermes gathers private context and decides when to call. `dawson.gg` owns authenticated session
+state, fixed-destination call origination, signed Telnyx webhooks, and the MCP bridge. Telnyx
+conducts the voice conversation. Hermes remains the only component that executes approved actions
+against Discord, Signal, iMessage, calendars, or other services.
 
-## API contract
+## Morning briefing contract
 
-Hermes creates one call with:
+Hermes creates a call:
 
 ```http
-POST /api/internal/wake-tasks
+POST /api/internal/briefing-sessions
 Authorization: Bearer HERMES_INTERNAL_WAKE_TOKEN
 Idempotency-Key: UUID
 Content-Type: application/json
 
 {
-  "type": "meeting_wake",
-  "severity": "high",
-  "goal": "Confirm Dawson is awake for a meeting in 15 minutes.",
-  "success_condition": "Dawson explicitly says he is awake and getting up.",
-  "max_duration_seconds": 120
+  "title": "Morning briefing for July 27",
+  "max_duration_seconds": 300,
+  "items": [
+    {
+      "id": "calendar-standup",
+      "kind": "calendar",
+      "title": "Team standup",
+      "summary": "10:00 AM with the product team.",
+      "source": "calendar"
+    },
+    {
+      "id": "discord-alex",
+      "kind": "message",
+      "title": "Alex needs a response",
+      "summary": "Asked whether the launch can move to Tuesday.",
+      "source": "discord",
+      "requires_response": true,
+      "details": "Include only the context needed to answer safely."
+    }
+  ]
 }
 ```
 
-Hermes polls `GET /api/internal/wake-tasks/{id}` with the same bearer token. The response's
-`next_recommended_action` is `wait`, `stop`, or `retry`; Hermes owns retries and escalation.
-Neither endpoint accepts a phone number.
+Allowed item kinds are `calendar`, `message`, `task`, `update`, `reminder`, and `other`. The
+destination is always `WAKEUP_TO_NUMBER`; the request cannot supply a phone number.
 
-## Security
+Hermes reads the result using:
 
-- Telnyx event webhooks use raw-body Ed25519 verification and a five-minute replay window.
+```http
+GET /api/internal/briefing-sessions/{id}
+Authorization: Bearer HERMES_INTERNAL_WAKE_TOKEN
+```
+
+The response contains briefing items and the actions captured during the call. An action with
+`status: "draft"` must not be executed. An action with `status: "approved"` was explicitly
+confirmed during the call, but Hermes should still enforce its own platform permissions and
+idempotency before execution.
+
+## Telnyx MCP
+
+The Streamable HTTP endpoint is:
+
+```text
+https://dawson.gg/api/telnyx/mcp
+```
+
+It requires `Authorization: Bearer TELNYX_AI_TOOL_TOKEN` and exposes:
+
+- `get_briefing`
+- `record_action`
+- `finish_briefing`
+
+Telnyx supplies a platform-controlled `telnyx_conversation_id` in MCP `_meta`. The server uses
+that value to select the briefing; it does not accept a model-supplied task or phone number.
+
+Run `bun run telnyx:configure-assistant` after deployment. The script idempotently stores the MCP
+bearer token as a Telnyx integration secret, registers the MCP server, attaches it to the assistant,
+and configures the assistant as concise **Hermes Voice**. Audio recording remains disabled.
+
+## Security and limitations
+
+- Telnyx Call Control webhooks use raw-body Ed25519 verification.
 - Hermes endpoints use `HERMES_INTERNAL_WAKE_TOKEN`.
-- The Telnyx AI tool uses a separate `TELNYX_AI_TOOL_TOKEN` header configured on the assistant.
-- The destination is always `WAKEUP_TO_NUMBER`; callers cannot override it.
-- D1 stores summaries and short evidence excerpts for seven days, not complete transcripts.
-- Telnyx audio recording is disabled. Conversation messages remain available for fallback
-  classification.
+- MCP uses the separate `TELNYX_AI_TOOL_TOKEN`.
+- Calls always go to the configured fixed destination.
+- Voice records intent; Hermes executes external actions.
+- Exact content must be read back and explicitly confirmed before `send_reply` is approved.
+- D1 retains structured session state; audio recording is disabled.
+- The legacy wake endpoint remains available for simple escalation calls.
 
-Required bindings are the existing Telnyx values plus `TELNYX_AI_ASSISTANT_ID`,
-`HERMES_INTERNAL_WAKE_TOKEN`, `TELNYX_AI_TOOL_TOKEN`, and the `WAKE_DB` D1 binding.
-
-Run `bun run telnyx:configure-assistant` after deploying the tool endpoint. It repurposes the
-configured assistant as **Hermes Wake Voice**, attaches `report_wake_status`, limits calls to two
-minutes, enables conversation events, and disables audio recording.
-
-## Failure behavior
-
-If AI Assistant startup fails after answer, the webhook plays the proven fixed wake-up message and
-marks the task failed. If the assistant omits its tool call, the conversation-ended webhook fetches
-messages and only confirms success when Dawson explicitly says he is awake and getting up. Calls
-without wake-task client state retain the original fixed-message behavior.
+Required environment variables are `TELNYX_API_KEY`, `TELNYX_PUBLIC_KEY`,
+`TELNYX_CONNECTION_ID`, `TELNYX_FROM_NUMBER`, `WAKEUP_TO_NUMBER`,
+`TELNYX_AI_ASSISTANT_ID`, `HERMES_INTERNAL_WAKE_TOKEN`, and `TELNYX_AI_TOOL_TOKEN`.
