@@ -78,9 +78,10 @@ https://dawson.gg/api/whoop/webhook
 
 The endpoint verifies `X-WHOOP-Signature` against the raw request body using
 `WHOOP_CLIENT_SECRET`, rejects stale signatures, and processes events only when `user_id` matches
-`WHOOP_USER_ID`. Other connected WHOOP members are acknowledged and ignored. Accepted event
-references are retained in KV for 30 days; the webhook never contains the underlying health stats,
-which must be fetched separately through Dawson's OAuth grant.
+`WHOOP_USER_ID`. While that ID is not configured, signed event references are quarantined without
+being attributed to Dawson. Once configured, other connected WHOOP members are acknowledged and
+ignored. Accepted event references are retained in KV for 30 days; the webhook never contains the
+underlying health stats, which must be fetched separately through Dawson's OAuth grant.
 
 ## License
 
