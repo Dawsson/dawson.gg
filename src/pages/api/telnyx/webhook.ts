@@ -93,7 +93,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         break;
       }
       locals.runtime.ctx.waitUntil(
-        startWakeAssistant(payload.call_control_id, eventId, task, env)
+        startWakeAssistant(payload.call_control_id, env)
           .then((conversationId) =>
             updateWakeTask(env.WAKE_DB, task.id, {
               status: "in_progress",

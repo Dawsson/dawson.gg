@@ -130,7 +130,22 @@ async function telnyxRequest(
   });
 
   if (!response.ok) {
-    throw new Error(`Telnyx API request failed with status ${response.status}`);
+    let detail = "";
+    try {
+      const payload = (await response.json()) as {
+        errors?: Array<{ code?: string; detail?: string; title?: string }>;
+      };
+      const error = payload.errors?.[0];
+      detail = [error?.code, error?.title, error?.detail]
+        .filter((value): value is string => typeof value === "string" && value.length > 0)
+        .join(": ")
+        .slice(0, 500);
+    } catch {
+      // Telnyx can return a non-JSON proxy response. Never include that raw body.
+    }
+    throw new Error(
+      `Telnyx API request failed with status ${response.status}${detail ? `: ${detail}` : ""}`,
+    );
   }
 
   return response.json();
@@ -263,8 +278,6 @@ export async function initiateWakeTaskCall(
 
 export async function startWakeAssistant(
   callControlId: string,
-  eventId: string,
-  task: WakeTask,
   env: Pick<Bindings, "TELNYX_API_KEY" | "TELNYX_AI_ASSISTANT_ID">,
   fetcher: Fetch = fetch,
 ): Promise<string> {
@@ -276,20 +289,6 @@ export async function startWakeAssistant(
     env.TELNYX_API_KEY,
     {
       assistant: { id: env.TELNYX_AI_ASSISTANT_ID },
-      message_history: [
-        {
-          role: "developer",
-          content: JSON.stringify({
-            wake_task_id: task.id,
-            goal: task.goal,
-            success_condition: task.successCondition,
-            expires_at: task.expiresAt,
-          }),
-        },
-      ],
-      send_message_history_updates: true,
-      client_state: encodeWakeClientState(task.id),
-      command_id: eventId,
     },
     fetcher,
   )) as { data?: { conversation_id?: string } };

@@ -131,15 +131,37 @@ describe("Telnyx webhooks", () => {
     });
     expect(dialBody.client_state).toBeString();
 
-    expect(await startWakeAssistant("v3:test", "event-1", task as never, env, fetcher)).toBe(
-      "conversation-1",
-    );
+    expect(await startWakeAssistant("v3:test", env, fetcher)).toBe("conversation-1");
     const assistantBody = await requests[1].json();
-    expect(assistantBody).toMatchObject({
+    expect(assistantBody).toEqual({
       assistant: { id: "assistant-1" },
-      send_message_history_updates: true,
-      command_id: "event-1",
     });
-    expect(JSON.stringify(assistantBody.message_history)).toContain("task-1");
+  });
+
+  test("includes sanitized Telnyx validation details without response bodies", async () => {
+    const fetcher = async () =>
+      Response.json(
+        {
+          errors: [
+            {
+              code: "10015",
+              title: "Bad Request",
+              detail: "assistant is invalid",
+            },
+          ],
+          secret: "must-not-leak",
+        },
+        { status: 422 },
+      );
+
+    await expect(
+      startWakeAssistant(
+        "v3:test",
+        { TELNYX_API_KEY: "secret", TELNYX_AI_ASSISTANT_ID: "assistant-1" },
+        fetcher,
+      ),
+    ).rejects.toThrow(
+      "Telnyx API request failed with status 422: 10015: Bad Request: assistant is invalid",
+    );
   });
 });
