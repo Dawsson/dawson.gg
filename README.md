@@ -84,7 +84,9 @@ ignored. Accepted event references are retained in KV for 30 days; the webhook n
 underlying health stats, which must be fetched separately through Dawson's OAuth grant.
 
 Hermes can read accepted event references from `GET /api/internal/whoop/events` using
-`HERMES_INTERNAL_TOKEN`.
+`HERMES_INTERNAL_TOKEN`. Start Dawson's private OAuth flow with
+`POST /api/internal/whoop/connect`; its callback is `https://dawson.gg/api/whoop/callback`.
+OAuth tokens are encrypted at rest and used to return current WHOOP metrics in the internal feed.
 
 ## License
 

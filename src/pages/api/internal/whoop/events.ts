@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { hasBearerToken } from "@/lib/internal-auth.ts";
 import type { Bindings } from "@/lib/types.ts";
+import { getWhoopSnapshot } from "@/lib/whoop-oauth.ts";
 
 type StoredWhoopEvent = {
   type: string;
@@ -26,11 +27,22 @@ export const GET: APIRoute = async ({ request, locals }) => {
     .filter((event): event is StoredWhoopEvent => event !== null)
     .sort((left, right) => right.received_at.localeCompare(left.received_at));
 
+  let snapshot: Record<string, unknown> | null = null;
+  let statsError: "reconnect_required" | undefined;
+  try {
+    snapshot = await getWhoopSnapshot(env.CACHE, env);
+  } catch {
+    statsError = "reconnect_required";
+  }
   return Response.json({
     events,
     source: "whoop_webhook",
-    stats_available: false,
-    note: "WHOOP webhooks identify changed resources; health metrics require OAuth API access.",
+    stats_available: snapshot !== null,
+    snapshot,
+    ...(statsError ? { stats_error: statsError } : {}),
+    note: snapshot
+      ? "WHOOP metrics fetched through Dawson's OAuth grant."
+      : "WHOOP webhooks identify changed resources; health metrics require OAuth API access.",
   });
 };
 

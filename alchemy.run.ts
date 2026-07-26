@@ -49,6 +49,7 @@ const site = await Astro("portfolio", {
     ...(process.env.WHOOP_CLIENT_SECRET
       ? { WHOOP_CLIENT_SECRET: secret(process.env.WHOOP_CLIENT_SECRET) }
       : {}),
+    ...(process.env.WHOOP_CLIENT_ID ? { WHOOP_CLIENT_ID: process.env.WHOOP_CLIENT_ID } : {}),
     ...(process.env.WHOOP_USER_ID ? { WHOOP_USER_ID: secret(process.env.WHOOP_USER_ID) } : {}),
   },
   url: true,
