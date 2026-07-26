@@ -128,6 +128,7 @@ describe("Telnyx webhooks", () => {
       to: "+13135550101",
       command_id: "task-1",
       time_limit_secs: 120,
+      preferred_codecs: "AMR-WB,OPUS,G722,PCMU,PCMA",
     });
     expect(dialBody.client_state).toBeString();
 

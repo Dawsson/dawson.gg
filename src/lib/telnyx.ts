@@ -264,6 +264,7 @@ export async function initiateWakeTaskCall(
       command_id: task.id,
       client_state: encodeWakeClientState(task.id),
       time_limit_secs: task.maxDurationSeconds,
+      preferred_codecs: "AMR-WB,OPUS,G722,PCMU,PCMA",
     },
     fetcher,
   )) as { data?: { call_control_id?: string; call_session_id?: string } };
