@@ -31,6 +31,11 @@ const site = await Astro("portfolio", {
     GITHUB_REPO: "Dawsson/vault",
     NODE_ENV: process.env.NODE_ENV ?? "development",
     CF_ANALYTICS_TOKEN: secret(process.env.CF_ANALYTICS_TOKEN),
+    TELNYX_API_KEY: secret(process.env.TELNYX_API_KEY),
+    TELNYX_PUBLIC_KEY: secret(process.env.TELNYX_PUBLIC_KEY),
+    TELNYX_CONNECTION_ID: secret(process.env.TELNYX_CONNECTION_ID),
+    TELNYX_FROM_NUMBER: secret(process.env.TELNYX_FROM_NUMBER),
+    WAKEUP_TO_NUMBER: secret(process.env.WAKEUP_TO_NUMBER),
   },
   url: true,
 });
