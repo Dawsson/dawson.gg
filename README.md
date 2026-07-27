@@ -87,6 +87,9 @@ Hermes can read accepted event references from `GET /api/internal/whoop/events` 
 `HERMES_INTERNAL_TOKEN`. Start Dawson's private OAuth flow with
 `POST /api/internal/whoop/connect`; its callback is `https://dawson.gg/api/whoop/callback`.
 OAuth tokens are encrypted at rest and used to return current WHOOP metrics in the internal feed.
+For compact polling, Hermes should use `GET /api/internal/whoop/latest`; access tokens are refreshed
+server-side before expiry and retried once after a WHOOP `401`. WHOOP's current developer API
+provides aggregate heart-rate fields for cycles and workouts, not live heart-rate samples.
 
 ## License
 

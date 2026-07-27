@@ -1,13 +1,8 @@
 import type { APIRoute } from "astro";
 import { hasBearerToken } from "@/lib/internal-auth.ts";
 import type { Bindings } from "@/lib/types.ts";
+import { getStoredWhoopEvents } from "@/lib/whoop-events.ts";
 import { getWhoopSnapshot } from "@/lib/whoop-oauth.ts";
-
-type StoredWhoopEvent = {
-  type: string;
-  resource_id: string;
-  received_at: string;
-};
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const env = locals.runtime.env as Bindings;
@@ -15,17 +10,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const listed = await env.CACHE.list({ prefix: "whoop:webhook:", limit: 50 });
-  const events = (
-    await Promise.all(
-      listed.keys.map(async ({ name }) => {
-        const event = await env.CACHE.get<StoredWhoopEvent>(name, "json");
-        return event;
-      }),
-    )
-  )
-    .filter((event): event is StoredWhoopEvent => event !== null)
-    .sort((left, right) => right.received_at.localeCompare(left.received_at));
+  const events = await getStoredWhoopEvents(env.CACHE);
 
   let snapshot: Record<string, unknown> | null = null;
   let statsError: "reconnect_required" | undefined;
