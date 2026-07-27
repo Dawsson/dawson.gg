@@ -197,7 +197,9 @@ export async function initiateVoiceSessionCall(
       to: required.HERMES_TO_NUMBER,
       command_id: session.id,
       client_state: encodeVoiceClientState(session.id),
+      timeout_secs: 20,
       time_limit_secs: session.maxDurationSeconds,
+      answering_machine_detection: "detect",
     },
     fetcher,
   )) as { data?: { call_control_id?: string; call_session_id?: string } };
@@ -208,6 +210,24 @@ export async function initiateVoiceSessionCall(
     callControlId: response.data.call_control_id,
     callSessionId: response.data.call_session_id,
   };
+}
+
+export function isHumanAnsweringMachineResult(value: unknown): boolean {
+  return ["human", "human_residence", "human_business", "not_sure"].includes(String(value));
+}
+
+export async function hangupCall(
+  callControlId: string,
+  commandId: string,
+  apiKey: string,
+  fetcher: Fetch = fetch,
+): Promise<void> {
+  await telnyxRequest(
+    `/calls/${encodeURIComponent(callControlId)}/actions/hangup`,
+    apiKey,
+    { command_id: commandId },
+    fetcher,
+  );
 }
 
 export async function startVoiceAssistant(

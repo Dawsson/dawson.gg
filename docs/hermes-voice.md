@@ -54,6 +54,11 @@ The response contains briefing items and the actions captured during the call. A
 confirmed during the call, but Hermes should still enforce its own platform permissions and
 idempotency before execution.
 
+Wake-only callers may use the authenticated `/api/internal/wake-tasks` adapter. It stores the task
+in the same voice/briefing tables, limits calls to 30–180 seconds, uses Answering Machine Detection,
+and only reports `awake_confirmed` after the assistant records the exact approved confirmation.
+Operational and iPhone fallback details are in [`wake-hardening.md`](wake-hardening.md).
+
 ## Telnyx MCP
 
 The Streamable HTTP endpoint is:
@@ -84,6 +89,7 @@ and configures the assistant as concise **Hermes Voice**. Audio recording remain
 - Voice records intent; Hermes executes external actions.
 - Exact content must be read back and explicitly confirmed before `send_reply` is approved.
 - D1 retains structured session state; audio recording is disabled.
+- AI assistant startup waits for a human AMD result; machine answers are hung up.
 
 Required environment variables are `TELNYX_API_KEY`, `TELNYX_PUBLIC_KEY`,
 `TELNYX_CONNECTION_ID`, `TELNYX_FROM_NUMBER`, `HERMES_TO_NUMBER`,

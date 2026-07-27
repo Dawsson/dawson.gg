@@ -64,7 +64,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const maxDurationSeconds =
     Number.isInteger(input.max_duration_seconds) &&
-    Number(input.max_duration_seconds) >= 60 &&
+    Number(input.max_duration_seconds) >= 30 &&
     Number(input.max_duration_seconds) <= 600
       ? Number(input.max_duration_seconds)
       : 300;

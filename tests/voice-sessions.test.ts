@@ -6,6 +6,7 @@ import {
   type BriefingItem,
 } from "../src/lib/briefing-sessions";
 import { hasBearerToken } from "../src/lib/internal-auth";
+import { parseWakeBridgeInput, publicWakeBridge } from "../src/lib/wake-bridge";
 import {
   createVoiceSession,
   getVoiceSession,
@@ -86,6 +87,61 @@ describe("Hermes voice sessions", () => {
     expect(
       await recordVoiceSessionEvent(db, first.session.id, "event-1", "call.initiated", "now"),
     ).toBe(false);
+  });
+
+  test("wake bridge is fixed-destination, bounded, and requires explicit confirmation", () => {
+    expect(
+      parseWakeBridgeInput({
+        type: "daily_wake",
+        severity: "high",
+        goal: "Wake Dawson.",
+        success_condition: "Explicit awake confirmation.",
+        max_duration_seconds: 45,
+        to: "+13135550199",
+      }),
+    ).toBeNull();
+    expect(
+      parseWakeBridgeInput({
+        type: "daily_wake",
+        severity: "high",
+        goal: "Wake Dawson.",
+        success_condition: "Explicit awake confirmation.",
+        max_duration_seconds: 181,
+      }),
+    ).toBeNull();
+
+    const now = new Date().toISOString();
+    const result = publicWakeBridge({
+      voiceSession: {
+        id: "wake-1",
+        idempotencyKey: "request-wake",
+        status: "completed",
+        maxDurationSeconds: 45,
+        telnyxConversationId: "conversation-1",
+        telnyxCallControlId: "v3:test",
+        telnyxCallSessionId: "call-session-1",
+        error: null,
+        createdAt: now,
+        updatedAt: now,
+        expiresAt: now,
+        retainUntil: now,
+      },
+      title: "Wake Dawson",
+      items: [],
+      actions: [
+        {
+          id: "action-1",
+          type: "note",
+          content: "Dawson explicitly confirmed: I am awake and getting up.",
+          status: "approved",
+          createdAt: now,
+        },
+      ],
+      notes: [],
+      completedAt: now,
+    });
+    expect(result.status).toBe("awake_confirmed");
+    expect(result.next_recommended_action).toBe("stop");
   });
 
   test("MCP resolves a briefing from Telnyx-controlled conversation metadata", async () => {

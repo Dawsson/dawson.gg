@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
+  hangupCall,
   initiateVoiceSessionCall,
+  isHumanAnsweringMachineResult,
   parseTelnyxCallEvent,
   startVoiceAssistant,
   verifyTelnyxWebhook,
@@ -73,11 +75,28 @@ describe("Telnyx voice integration", () => {
     expect(await requests[0].json()).toMatchObject({
       to: "+13135550101",
       command_id: "session-1",
+      timeout_secs: 20,
       time_limit_secs: 300,
+      answering_machine_detection: "detect",
     });
 
     expect(await startVoiceAssistant("v3:test", env, fetcher)).toBe("conversation-1");
     expect(await requests[1].json()).toEqual({ assistant: { id: "assistant-1" } });
+  });
+
+  test("classifies AMD results and sends an idempotent hangup command", async () => {
+    expect(isHumanAnsweringMachineResult("human")).toBe(true);
+    expect(isHumanAnsweringMachineResult("not_sure")).toBe(true);
+    expect(isHumanAnsweringMachineResult("machine")).toBe(false);
+    expect(isHumanAnsweringMachineResult("silence")).toBe(false);
+
+    let request: Request | undefined;
+    await hangupCall("v3:test", "event-1-machine-hangup", "secret", async (input, init) => {
+      request = new Request(input, init);
+      return Response.json({ data: { result: "ok" } });
+    });
+    expect(request?.url).toEndWith("/calls/v3%3Atest/actions/hangup");
+    expect(await request?.json()).toEqual({ command_id: "event-1-machine-hangup" });
   });
 
   test("includes sanitized Telnyx validation details without response bodies", async () => {

@@ -1,6 +1,8 @@
 import type { APIRoute } from "astro";
 import {
   decodeVoiceClientState,
+  hangupCall,
+  isHumanAnsweringMachineResult,
   parseTelnyxCallEvent,
   startVoiceAssistant,
   verifyTelnyxWebhook,
@@ -61,7 +63,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       telnyxCallControlId: payload.call_control_id,
       telnyxCallSessionId: payload.call_session_id,
     });
-  } else if (eventType === "call.answered" && payload.call_control_id) {
+  } else if (
+    eventType === "call.machine.detection.ended" &&
+    payload.call_control_id &&
+    isHumanAnsweringMachineResult(payload.result)
+  ) {
     locals.runtime.ctx.waitUntil(
       startVoiceAssistant(payload.call_control_id, env)
         .then((conversationId) =>
@@ -77,6 +83,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
           console.error("Telnyx voice assistant failed", { sessionId: session.id, message });
           return updateVoiceSession(env.VOICE_DB, session.id, { status: "failed", error: message });
         }),
+    );
+  } else if (
+    eventType === "call.machine.detection.ended" &&
+    payload.call_control_id &&
+    env.TELNYX_API_KEY
+  ) {
+    await updateVoiceSession(env.VOICE_DB, session.id, {
+      status: "failed",
+      error: "machine_answered",
+    });
+    locals.runtime.ctx.waitUntil(
+      hangupCall(payload.call_control_id, `${eventId}-machine-hangup`, env.TELNYX_API_KEY).catch(
+        (error) => {
+          console.error("Telnyx machine-answer hangup failed", {
+            sessionId: session.id,
+            message: error instanceof Error ? error.message : "unknown error",
+          });
+        },
+      ),
     );
   } else if (eventType === "call.hangup" && session.status !== "completed") {
     await updateVoiceSession(env.VOICE_DB, session.id, {
