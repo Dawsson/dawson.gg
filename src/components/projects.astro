@@ -10,57 +10,68 @@ const carbon = PROJECTS.find((p) => p.slug === "carbon-host");
   <h2 id="work-heading" class="section-label">Work</h2>
   <ol class="work-list">
     {
-      featured.map((project) => (
-        <li class="work-item">
-          <div class="work-head">
-            <h3 class="work-title">
-              {project.url ? (
-                <a href={project.url} target="_blank" rel="noopener noreferrer">
-                  {project.title}
-                </a>
-              ) : (
-                project.title
-              )}
-            </h3>
-            {(project.role || project.period) && (
-              <p class="work-meta">
-                {project.role}
-                {project.role && project.period ? (
-                  <span class="work-meta-sep" aria-hidden="true">
-                    ·
-                  </span>
-                ) : null}
-                {project.period && <span class="work-period">{project.period}</span>}
-              </p>
-            )}
-          </div>
-          <p class="work-desc">{project.description}</p>
-          {project.stats && project.stats.length > 0 && (
-            <p class="work-proof">
-              {project.stats.map((stat, index) => (
-                <>
-                  {index > 0 && (
-                    <span class="work-proof-sep" aria-hidden="true">
-                      ·
-                    </span>
+      featured.map((project) => {
+        const [primary, ...rest] = project.stats ?? [];
+        return (
+          <li class="work-item">
+            <div class="work-row">
+              <div class="work-main">
+                <h3 class="work-title">
+                  {project.url ? (
+                    <a href={project.url} target="_blank" rel="noopener noreferrer">
+                      {project.title}
+                    </a>
+                  ) : (
+                    project.title
                   )}
-                  <span class="work-proof-item">
-                    <span class="work-proof-value">{stat.value}</span>
-                    {stat.label ? ` ${stat.label}` : null}
-                  </span>
-                </>
-              ))}
-            </p>
-          )}
-          {project.github && (
-            <p class="work-links">
-              <a href={project.github} target="_blank" rel="noopener noreferrer">
-                GitHub
-              </a>
-            </p>
-          )}
-        </li>
-      ))
+                </h3>
+                {(project.role || project.period) && (
+                  <p class="work-meta">
+                    {project.role}
+                    {project.role && project.period ? (
+                      <span class="work-meta-sep" aria-hidden="true">
+                        ·
+                      </span>
+                    ) : null}
+                    {project.period}
+                  </p>
+                )}
+                <p class="work-desc">{project.description}</p>
+                {rest.length > 0 && (
+                  <p class="work-proof">
+                    {rest.map((stat, index) => (
+                      <>
+                        {index > 0 && (
+                          <span class="work-proof-sep" aria-hidden="true">
+                            ·
+                          </span>
+                        )}
+                        <span class="work-proof-item">
+                          <span class="work-proof-value">{stat.value}</span>
+                          {stat.label ? ` ${stat.label}` : null}
+                        </span>
+                      </>
+                    ))}
+                  </p>
+                )}
+                {project.github && (
+                  <p class="work-links">
+                    <a href={project.github} target="_blank" rel="noopener noreferrer">
+                      GitHub
+                    </a>
+                  </p>
+                )}
+              </div>
+              {primary && (
+                <p class="work-aside" aria-label={`${primary.value} ${primary.label}`}>
+                  <span class="work-aside-value">{primary.value}</span>
+                  {primary.label && <span class="work-aside-label">{primary.label}</span>}
+                </p>
+              )}
+            </div>
+          </li>
+        );
+      })
     }
   </ol>
   <p class="work-also">
