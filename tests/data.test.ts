@@ -42,4 +42,21 @@ describe("data integrity", () => {
   test("at least one featured technology exists", () => {
     expect(TECHNOLOGIES.some((t) => t.featured)).toBe(true);
   });
+
+  test("featured work includes the public track record", () => {
+    const bySlug = Object.fromEntries(PROJECTS.map((project) => [project.slug, project]));
+    expect(bySlug.affinityrx?.role).toBe("CTO");
+    expect(bySlug.affinityrx?.url).toBe("https://joinaffinityai.com");
+    expect(bySlug["plugin-portal"]?.github).toBe("https://github.com/flytegg/plugin-portal");
+    expect(bySlug["plugin-portal"]?.stats?.map((stat) => stat.value)).toEqual([
+      "50,000+",
+      "91",
+      "~800",
+    ]);
+    expect(bySlug.discordservers?.description).toContain("million");
+    expect(bySlug["christmas-charity"]?.description).toContain("$2,066.87");
+    expect(bySlug["christmas-charity"]?.description).toContain("$2,326.78");
+    expect(bySlug["christmas-charity"]?.description).toContain("No Kid Hungry");
+    expect(bySlug["christmas-charity"]?.description).toContain("Best Friends Animal Society");
+  });
 });

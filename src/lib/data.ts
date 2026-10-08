@@ -1,3 +1,8 @@
+export interface ProjectStat {
+  value: string;
+  label: string;
+}
+
 export interface Project {
   slug: string;
   title: string;
@@ -6,6 +11,9 @@ export interface Project {
   url?: string;
   github?: string;
   featured: boolean;
+  role?: string;
+  period?: string;
+  stats?: ProjectStat[];
 }
 
 export type TechCategory =
@@ -35,10 +43,10 @@ export interface Profile {
 }
 
 export const PROFILE: Profile = {
-  name: "Dawson",
+  name: "Dawson Cesarek",
   title: "Full Stack Developer",
   intro:
-    "<strong>Full stack</strong> developer building products <strong>end-to-end</strong>. Mobile apps, cloud infrastructure, and everything in between. I <strong>ship fast</strong> and care about tools that get out of the way.",
+    "<strong>Full stack</strong> developer. I build products <strong>end to end</strong> and stay with them after launch, from a pharmacy platform for clinics and telehealth to open-source tools people run on their own servers.",
   links: [
     { label: "GitHub", url: "https://github.com/Dawsson" },
     { label: "X", url: "https://x.com/DawssonMonroe" },
@@ -47,38 +55,79 @@ export const PROFILE: Profile = {
 
 export const PROJECTS: Project[] = [
   {
-    slug: "peptide-ai",
-    title: "Peptide AI",
+    slug: "affinityrx",
+    title: "AffinityRx",
+    role: "CTO",
+    period: "2026 —",
     description:
-      "Health-tech platform for GLP-1 peptide therapy. ML pipeline for synthetic patient data, HIPAA-compliant architecture, and provider-facing dashboards.",
-    technologies: ["React Native", "TypeScript", "Python", "PostgreSQL", "Expo"],
+      "Built the clinic portal and API end to end. Clinics, medspas, and telehealth brands order compounded medications from vetted pharmacies through one portal and one API.",
+    stats: [
+      { value: "15+", label: "vetted pharmacies" },
+      { value: "July 2026", label: "public launch" },
+    ],
+    technologies: ["TypeScript"],
+    url: "https://joinaffinityai.com",
     featured: true,
   },
   {
-    slug: "vault",
-    title: "Vault",
+    slug: "plugin-portal",
+    title: "Plugin Portal",
+    role: "Core maintainer",
+    period: "2023 —",
     description:
-      "Personal knowledge base and second brain. Obsidian vault with AI-powered semantic search, agent automation, and a public-facing site — the one you're reading now.",
-    technologies: ["TypeScript", "Cloudflare", "Hono", "Bun"],
-    url: "https://dawson.gg",
-    github: "https://github.com/Dawsson/vault",
+      "Open-source Minecraft plugin manager in Kotlin. Server owners search, install, and update plugins from Spigot, Modrinth, Hangar, and Polymart in game chat. Rated 4.3 out of 5 from 28 ratings on Spigot.",
+    stats: [
+      { value: "50,000+", label: "downloads" },
+      { value: "91", label: "GitHub stars" },
+      { value: "~800", label: "active servers" },
+    ],
+    technologies: ["Kotlin"],
+    url: "https://pluginportal.link",
+    github: "https://github.com/flytegg/plugin-portal",
     featured: true,
   },
   {
-    slug: "hotline",
-    title: "Hotline",
+    slug: "discordservers",
+    title: "discordservers.gg",
+    role: "WIP Group",
     description:
-      "Dev bridge for AI agents to communicate with running React Native apps in real time. Send commands, wait for events, inspect state — all from the terminal.",
-    technologies: ["TypeScript", "Bun", "React Native", "WebSocket"],
+      "Discord server directory that tracked over a million members across listed communities. The original site is no longer online.",
+    stats: [{ value: "1 million+", label: "members tracked" }],
+    technologies: ["TypeScript"],
     featured: true,
   },
   {
-    slug: "zestarr",
-    title: "Zestarr",
+    slug: "christmas-charity",
+    title: "Christmas charity",
+    role: "Flyte",
+    period: "2023–2024",
     description:
-      "Restaurant discovery app with AI-powered recommendations. Full-stack mobile app with real-time search, reviews, and social features.",
-    technologies: ["React Native", "Expo", "TypeScript", "Next.js", "PostgreSQL"],
+      "Helped build the Minecraft minigames for two Flyte Christmas charity streams, including the LearnSpigot-sponsored 2023 event. That stream, with PebbleHost and BuiltByBit, raised $2,066.87 for No Kid Hungry. The 2024 stream, sponsored by JetBrains and Carbon Host, raised $2,326.78 for Best Friends Animal Society.",
+    stats: [
+      { value: "$2,066.87", label: "for No Kid Hungry in 2023" },
+      { value: "$2,326.78", label: "for Best Friends Animal Society in 2024" },
+    ],
+    technologies: ["Kotlin"],
     featured: true,
+  },
+  {
+    slug: "mc-utils",
+    title: "MC Utils",
+    description:
+      "Free Minecraft tools for developers, builders, and players, including server jars, item IDs, and inventory slots.",
+    technologies: ["Svelte"],
+    url: "https://mcutils.com",
+    github: "https://github.com/flytegg/mc-utils",
+    featured: false,
+  },
+  {
+    slug: "carbon-host",
+    title: "Carbon Host",
+    description:
+      "Developer-focused Minecraft host. Built the TypeScript SDK, CLI, and server plugin. It never launched.",
+    technologies: ["TypeScript", "Kotlin"],
+    github: "https://github.com/carbon-host",
+    featured: false,
   },
 ];
 

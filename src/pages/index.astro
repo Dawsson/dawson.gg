@@ -2,7 +2,7 @@
 import PortfolioLayout from "@/layouts/portfolio.astro";
 import Hero from "@/components/hero.astro";
 import GitHub from "@/components/github.astro";
-// import Projects from "@/components/projects.astro";
+import Projects from "@/components/projects.astro";
 // import Technologies from "@/components/technologies.astro";
 // import RecentPosts from "@/components/recent-posts.astro";
 import Footer from "@/components/footer.astro";
@@ -32,10 +32,13 @@ try {
 }
 ---
 
-<PortfolioLayout title="Dawson — Software Engineer">
+<PortfolioLayout
+  title="Dawson Cesarek"
+  description="Dawson Cesarek is a full stack developer and the CTO of AffinityRx. He also maintains Plugin Portal, an open-source Minecraft plugin manager with 50,000+ downloads."
+>
   <Hero />
+  <Projects />
   {contribData && <GitHub data={contribData} />}
-  {/* <Projects /> */}
   {/* <Technologies /> */}
   {/* <RecentPosts notes={recentNotes} /> */}
   <Footer />
