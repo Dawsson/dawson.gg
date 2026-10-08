@@ -54,9 +54,13 @@ describe("data integrity", () => {
       "~800",
     ]);
     expect(bySlug.discordservers?.description).toContain("million");
-    expect(bySlug["christmas-charity"]?.description).toContain("$2,066.87");
-    expect(bySlug["christmas-charity"]?.description).toContain("$2,326.78");
+    expect(bySlug["christmas-charity"]?.description).toContain("over $10,000");
+    expect(bySlug["christmas-charity"]?.description).toContain("company donation matches");
     expect(bySlug["christmas-charity"]?.description).toContain("No Kid Hungry");
     expect(bySlug["christmas-charity"]?.description).toContain("Best Friends Animal Society");
+    expect(bySlug["christmas-charity"]?.stats?.map((stat) => stat.value)).toEqual([
+      "$10,000+",
+      "2",
+    ]);
   });
 });

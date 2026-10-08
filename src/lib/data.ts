@@ -102,10 +102,10 @@ export const PROJECTS: Project[] = [
     role: "Flyte",
     period: "2023–2024",
     description:
-      "Helped build the Minecraft minigames for two Flyte Christmas charity streams, including the LearnSpigot-sponsored 2023 event. That stream, with PebbleHost and BuiltByBit, raised $2,066.87 for No Kid Hungry. The 2024 stream, sponsored by JetBrains and Carbon Host, raised $2,326.78 for Best Friends Animal Society.",
+      "Helped build the Minecraft minigames for two separate Flyte Christmas charity streams: the LearnSpigot-sponsored 2023 event with PebbleHost and BuiltByBit for No Kid Hungry, and the 2024 stream sponsored by JetBrains and Carbon Host for Best Friends Animal Society. Across both events, including company donation matches not shown on the public campaign pages, they raised over $10,000.",
     stats: [
-      { value: "$2,066.87", label: "for No Kid Hungry in 2023" },
-      { value: "$2,326.78", label: "for Best Friends Animal Society in 2024" },
+      { value: "$10,000+", label: "raised with company matches" },
+      { value: "2", label: "charity streams" },
     ],
     technologies: ["Kotlin"],
     featured: true,
