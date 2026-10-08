@@ -8,7 +8,10 @@ import "@/styles/global.css";
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Real-time HTTP traffic across Dawson's infrastructure" />
+    <meta
+      name="description"
+      content="How many HTTP requests Dawson's projects get, live on a map."
+    />
     <meta name="theme-color" content="#faf9f7" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0b0a09" media="(prefers-color-scheme: dark)" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
@@ -24,27 +27,31 @@ import "@/styles/global.css";
             <h1 class="network-title">Live Requests</h1>
             <span class="network-realtime">
               <span class="network-pulse"></span>
-              <span class="network-popover">Data refreshes every 10 minutes</span>
+              <span class="network-popover">Refreshes every 10 minutes</span>
             </span>
           </div>
+
+          <p class="network-lede">
+            How many requests my projects get, and where they come from.
+          </p>
 
           <div class="network-stats-group">
             <div class="network-stat">
               <span class="network-stat-value" id="net-total">—</span>
-              <span class="network-stat-label">Requests (24h)</span>
+              <span class="network-stat-label">Last 24 hours</span>
             </div>
             <div class="network-stat">
               <span class="network-stat-value" id="net-rps">—</span>
-              <span class="network-stat-label">Requests / sec</span>
+              <span class="network-stat-label">Per second</span>
             </div>
             <div class="network-stat">
               <span class="network-stat-value" id="net-arcs">—</span>
-              <span class="network-stat-label">In-flight Arcs</span>
+              <span class="network-stat-label">On the map</span>
             </div>
           </div>
 
           <div class="network-countries" id="net-country-list">
-            <h2 class="network-countries-title">Traffic by Country</h2>
+            <h2 class="network-countries-title">By country</h2>
             <div class="network-countries-list"></div>
           </div>
         </div>

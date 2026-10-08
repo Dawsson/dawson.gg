@@ -2,37 +2,87 @@
 import { PROJECTS } from "@/lib/data.ts";
 
 const featured = PROJECTS.filter((p) => p.featured);
+const mcUtils = PROJECTS.find((p) => p.slug === "mc-utils");
+const carbon = PROJECTS.find((p) => p.slug === "carbon-host");
 ---
 
-<section class="section" id="projects">
-  <div class="section-header-row">
-    <h2 class="section-label">Projects</h2>
-    <a href="/network" class="network-cta">
-      <span class="network-cta-dot"></span>
-      View live traffic
-      <span class="network-cta-arrow">&rarr;</span>
-    </a>
-  </div>
-  <div class="projects-grid">
-    {featured.map((p) => (
-      <div class="project-card project-card--wip">
-        <h3>{p.title}</h3>
-        <p>{p.description}</p>
-        <div class="project-tech">
-          {p.technologies.map((t) => (
-            <span class="pill">{t}</span>
-          ))}
-        </div>
-        {(p.url || p.github) && (
-          <div class="project-links">
-            {p.url && <a href={p.url} target="_blank" rel="noopener">View</a>}
-            {p.github && <a href={p.github} target="_blank" rel="noopener">GitHub</a>}
-          </div>
-        )}
-        <div class="project-wip-overlay">
-          <span>Coming soon</span>
-        </div>
-      </div>
-    ))}
-  </div>
+<section class="section" id="work" aria-labelledby="work-heading">
+  <h2 id="work-heading" class="section-label">Work</h2>
+  <ol class="work-list">
+    {
+      featured.map((project) => {
+        const [primary, ...rest] = project.stats ?? [];
+        return (
+          <li class="work-item">
+            <div class="work-row">
+              <div class="work-main">
+                <h3 class="work-title">
+                  {project.url ? (
+                    <a href={project.url} target="_blank" rel="noopener noreferrer">
+                      {project.title}
+                    </a>
+                  ) : (
+                    project.title
+                  )}
+                </h3>
+                {(project.role || project.period) && (
+                  <p class="work-meta">
+                    {project.role}
+                    {project.role && project.period ? (
+                      <span class="work-meta-sep" aria-hidden="true">
+                        ·
+                      </span>
+                    ) : null}
+                    {project.period}
+                  </p>
+                )}
+                <p class="work-desc">{project.description}</p>
+                {rest.length > 0 && (
+                  <p class="work-proof">
+                    {rest.map((stat, index) => (
+                      <>
+                        {index > 0 && (
+                          <span class="work-proof-sep" aria-hidden="true">
+                            ·
+                          </span>
+                        )}
+                        <span class="work-proof-item">
+                          <span class="work-proof-value">{stat.value}</span>
+                          {stat.label ? ` ${stat.label}` : null}
+                        </span>
+                      </>
+                    ))}
+                  </p>
+                )}
+                {project.github && (
+                  <p class="work-links">
+                    <a href={project.github} target="_blank" rel="noopener noreferrer">
+                      GitHub
+                    </a>
+                  </p>
+                )}
+              </div>
+              {primary && (
+                <p class="work-aside" aria-label={`${primary.value} ${primary.label}`}>
+                  <span class="work-aside-value">{primary.value}</span>
+                  {primary.label && <span class="work-aside-label">{primary.label}</span>}
+                </p>
+              )}
+            </div>
+          </li>
+        );
+      })
+    }
+  </ol>
+  <p class="work-also">
+    Also contributed to {mcUtils?.url ? (
+      <a href={mcUtils.url} target="_blank" rel="noopener noreferrer">{mcUtils.title}</a>
+    ) : (
+      "MC Utils"
+    )}, Flyte's free Minecraft tools for developers and builders. Built the SDK, CLI, and server plugin for {carbon?.github ? (
+      <a href={carbon.github} target="_blank" rel="noopener noreferrer">Carbon Host</a>
+    ) : (
+      "Carbon Host"
+    )}, a developer-focused Minecraft host that never launched. Contract and freelance work includes commissioned web apps and Minecraft plugins.
+  </p>
 </section>
