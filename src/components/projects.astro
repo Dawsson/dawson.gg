@@ -13,35 +13,50 @@ const carbon = PROJECTS.find((p) => p.slug === "carbon-host");
       featured.map((project) => (
         <li class="work-item">
           <div class="work-head">
-            <h3 class="work-title">{project.title}</h3>
-            {project.period && <p class="work-period">{project.period}</p>}
+            <h3 class="work-title">
+              {project.url ? (
+                <a href={project.url} target="_blank" rel="noopener noreferrer">
+                  {project.title}
+                </a>
+              ) : (
+                project.title
+              )}
+            </h3>
+            {(project.role || project.period) && (
+              <p class="work-meta">
+                {project.role}
+                {project.role && project.period ? (
+                  <span class="work-meta-sep" aria-hidden="true">
+                    ·
+                  </span>
+                ) : null}
+                {project.period && <span class="work-period">{project.period}</span>}
+              </p>
+            )}
           </div>
-          {project.role && (
-            <p class="work-role">{project.role}</p>
-          )}
           <p class="work-desc">{project.description}</p>
           {project.stats && project.stats.length > 0 && (
-            <ul class="work-stats">
-              {project.stats.map((stat) => (
-                <li>
-                  <span class="work-stat-value">{stat.value}</span>
-                  <span class="work-stat-label">{stat.label}</span>
-                </li>
+            <p class="work-proof">
+              {project.stats.map((stat, index) => (
+                <>
+                  {index > 0 && (
+                    <span class="work-proof-sep" aria-hidden="true">
+                      ·
+                    </span>
+                  )}
+                  <span class="work-proof-item">
+                    <span class="work-proof-value">{stat.value}</span>
+                    {stat.label ? ` ${stat.label}` : null}
+                  </span>
+                </>
               ))}
-            </ul>
+            </p>
           )}
-          {(project.url || project.github) && (
+          {project.github && (
             <p class="work-links">
-              {project.url && (
-                <a href={project.url} target="_blank" rel="noopener noreferrer">
-                  Site
-                </a>
-              )}
-              {project.github && (
-                <a href={project.github} target="_blank" rel="noopener noreferrer">
-                  GitHub
-                </a>
-              )}
+              <a href={project.github} target="_blank" rel="noopener noreferrer">
+                GitHub
+              </a>
             </p>
           )}
         </li>
