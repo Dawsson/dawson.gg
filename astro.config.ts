@@ -3,6 +3,10 @@ import cloudflare from "@astrojs/cloudflare";
 
 export default defineConfig({
   output: "server",
+  server: {
+    host: true,
+    allowedHosts: true,
+  },
   adapter: cloudflare({
     platformProxy: {
       enabled: true,

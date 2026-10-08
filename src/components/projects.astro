@@ -16,7 +16,9 @@ const carbon = PROJECTS.find((p) => p.slug === "carbon-host");
             <h3 class="work-title">{project.title}</h3>
             {project.period && <p class="work-period">{project.period}</p>}
           </div>
-          {project.role && <p class="work-role">{project.role}</p>}
+          {project.role && (
+            <p class="work-role">{project.role}</p>
+          )}
           <p class="work-desc">{project.description}</p>
           {project.stats && project.stats.length > 0 && (
             <ul class="work-stats">
